@@ -244,7 +244,11 @@ TCB* scheduler()
 void timer_interrupt(int sig)
 {
     running->ticks--;   //Se reduce un tick por cada timer_interrupt
-    if (running->ticks == 0){   //Se comprueba si ha terminado
+    running->remaining_ticks--;
+    if (running->remaining_ticks==0){
+        mythread_exit();
+    }
+    if (running->ticks == 0){
         running->ticks = QUANTUM_TICKS;
         disable_interrupt();    //Se protege de posibles interrupciones
         TCB* next = scheduler();    //Se obtiene el siguiente proceso
