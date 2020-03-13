@@ -94,7 +94,6 @@ void init_mythreadlib()
 
   t_state[0].tid = 0;
   running = &t_state[0];
-  
     //Se inicializa la cola
     q = queue_new();
 
@@ -127,6 +126,7 @@ int mythread_create (void (*fun_addr)(),int priority,int seconds)
   t_state[i].function = fun_addr;
   t_state[i].execution_total_ticks = seconds_to_ticks(seconds);
   t_state[i].remaining_ticks = t_state[i].execution_total_ticks;
+  t_state[i].rodaja = 20; //parece ser que 20ticks son 100 ms
   t_state[i].run_env.uc_stack.ss_sp = (void *)(malloc(STACKSIZE));
   
   if(t_state[i].run_env.uc_stack.ss_sp == NULL)
@@ -246,14 +246,14 @@ TCB* scheduler()
 /* Timer interrupt */
 void timer_interrupt(int sig)
 {
-    running->ticks--;   //Se reduce un tick por cada timer_interrupt
+    running->ticks++;   //Se reduce un tick por cada timer_interrupt
+    running->rodaja--;
     running->remaining_ticks--;
-    if (running->remaining_ticks==0){
-        mythread_exit();
-    }
-    if (running->ticks == 0){
-        running->ticks = QUANTUM_TICKS;
-        disable_interrupt();    //Se protege de posibles interrupciones
+    if (running->rodaja == 0){
+        running->rodaja = 20;
+        disable_interrupt();  //Se protege de posibles interrupciones
+        enqueue(q, running);
+        enable_interrupt();
         TCB* next = scheduler();    //Se obtiene el siguiente proceso
         activator(next);
     }
@@ -270,21 +270,15 @@ void activator(TCB* next)
         
         running = next;
         current = next->tid;
-        running->ticks = QUANTUM_TICKS;
         
         setcontext(&(next->run_env));
         printf("mythread_free: After setcontext, should never get here!!...\n");
     } else if(running != next) {
         //Se debe hacer un swapcontext al siguiente proceso para no perder el actual
-        disable_interrupt();
         TCB* aux;
-        memcpy(&aux, &running, sizeof(TCB*));
-        enqueue(q, running);
-        enable_interrupt();
-
+        aux= running;
         running = next;
         current = next->tid;
-        running->ticks = QUANTUM_TICKS;
         printf("*** SWAPCONTEXT FROM %d TO %d\n", aux->tid, next->tid);
         swapcontext(&(aux->run_env), &(next->run_env));
     }

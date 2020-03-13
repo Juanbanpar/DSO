@@ -23,6 +23,7 @@ int main(int argc, char *argv[])
       printf("thread failed to initialize\n");
       exit(-1);
   }
+
   
   read_disk();
   read_disk();
@@ -50,7 +51,8 @@ int main(int argc, char *argv[])
   for (a=0; a<10; ++a) {
     for (b=0; b<30000000; ++b);
   }	
-
+    
+printf("PATATA");
   mythread_exit();	
   
   printf("This program should never come here\n");
