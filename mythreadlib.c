@@ -143,16 +143,22 @@ int mythread_create (void (*fun_addr)(),int priority,int seconds)
   t_state[i].run_env.uc_stack.ss_flags = 0;
   makecontext(&t_state[i].run_env, fun_addr,2,seconds);
 
-    if(priority == LOW_PRIORITY) {
+    if(t_state[i].priority == LOW_PRIORITY) {
             disable_interrupt();
             enqueue(q_low, &t_state[i]);
             enable_interrupt();
     }
 
-    if(priority == HIGH_PRIORITY && running->priority == LOW_PRIORITY) {
-            printf("*** THREAD %d PREEMPTED: SET CONTEXT OF %d\n", running->tid, i);
-            activator(&t_state[i]);
-    } else if(priority == HIGH_PRIORITY) {
+    if(t_state[i].priority == HIGH_PRIORITY) {
+            disable_interrupt();
+            enqueue(q_high, &t_state[i]);
+            enable_interrupt();
+    }
+
+    //if(t_state[i].priority == HIGH_PRIORITY && running->priority == LOW_PRIORITY) {
+    //        activator(&t_state[i]);
+    //}
+     else if(t_state[i].priority == HIGH_PRIORITY) {
             if(t_state[i].remaining_ticks < running->remaining_ticks){ //expulsar al proceso si se mete uno que dura menos
               activator(&t_state[i]);
             }else{// sino todo sigue su cauce
@@ -280,8 +286,9 @@ void timer_interrupt(int sig)
     }
     if(running->priority == LOW_PRIORITY){
       running->ticks++;   //Se reduce un tick por cada timer_interrupt
+      running->rodaja--;
       running->remaining_ticks--;
-      if (running->rodaja == 0 && running->priority == LOW_PRIORITY){   //Se comprueba si ha terminado y si la prioridad es baja
+      if (running->rodaja == 0){   //Se comprueba si ha terminado y si la prioridad es baja
           running->rodaja = 20;
           disable_interrupt();  //Se protege de posibles interrupciones
           enqueue(q_low, running);
@@ -310,7 +317,8 @@ void activator(TCB* next)
     } else {
         if (procesoActual->priority == LOW_PRIORITY && next->priority == HIGH_PRIORITY){/*si el thread actual es de baja y el siogoente es de alta imprimimos un mensaje, y si son los dos baja, uno distinto*/
             printf("*** THREAD %d PREEMTED : SETCONTEXT OF %d\n", procesoActual->tid, next->tid);
-        } else {
+        }
+         if(procesoActual->priority == LOW_PRIORITY && next->priority == LOW_PRIORITY) {
             printf("*** SWAPCONTEXT FROM %d TO %d\n", procesoActual->tid, next->tid);
         }
         //if (next->priority == LOW_PRIORITY){/* en  caso de que sea de baja prioridad el nuevo, reactivamos las interrupciones, en caso de alta no, pues se tiene que ejecutar hasta su fin */

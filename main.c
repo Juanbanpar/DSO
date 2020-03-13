@@ -15,7 +15,7 @@ extern void function_thread(int sec);
 
 int main(int argc, char *argv[])
 {
-  int j,k,l,m,a,b,f;
+  int j,k,l,m,a,b,f,p;
 
 
   mythread_setpriority(LOW_PRIORITY);
@@ -37,6 +37,11 @@ int main(int argc, char *argv[])
     exit(-1);
   }  
   if((l = mythread_create(function_thread,LOW_PRIORITY, 2)) == -1){
+    printf("thread failed to initialize\n");
+    exit(-1);
+  }
+
+  if((p = mythread_create(function_thread,LOW_PRIORITY, 2)) == -1){
     printf("thread failed to initialize\n");
     exit(-1);
   }
