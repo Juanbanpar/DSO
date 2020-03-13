@@ -32,6 +32,7 @@ typedef struct tcb{
   int ticks;
   int execution_total_ticks; /*Thread time to complete execution*/
   int remaining_ticks; /*Remaining ticks to complete the process execution*/
+  int rodaja;
   void (*function)(int);  /* the code of the thread */
   ucontext_t run_env; /* Context of the running environment*/
 }TCB;

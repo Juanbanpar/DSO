@@ -152,9 +152,13 @@ int mythread_create (void (*fun_addr)(),int priority,int seconds)
             printf("*** THREAD %d PREEMPTED: SET CONTEXT OF %d\n", running->tid, i);
             activator(&t_state[i]);
     } else if(priority == HIGH_PRIORITY) {
-            disable_interrupt();
-            enqueue(q_high, &t_state[i]);
-            enable_interrupt();
+            if(&t_state[i]->remaining_ticks < running->remaining_ticks){ //expulsar al proceso si se mete uno que dura menos
+              activator(&t_state[i]);
+            }else{// sino todo sigue su cauce
+              disable_interrupt();
+              sorted_enqueue(q_high, &t_state[i], &t_state[i]->remaining_ticks);
+              enable_interrupt();
+            }      
     }
   
   return i;
@@ -204,6 +208,9 @@ void mythread_setpriority(int priority)
 {
   int tid = mythread_gettid();	
   t_state[tid].priority = priority;
+  if(priority ==  HIGH_PRIORITY){
+    t_state[tid].remaining_ticks = 195;
+  }
 }
 
 /* Returns the priority of the calling thread */
@@ -265,7 +272,18 @@ TCB* scheduler()
 /* Timer interrupt */
 void timer_interrupt(int sig)
 {
+
+    if(running->priority== HIGH_PRIORITY){
+      running->remaining_ticks--;
+      if (running->remaining_ticks==0){
+        mythread_exit();
+    }
+    }
     running->ticks--;   //Se reduce un tick por cada timer_interrupt
+    running->remaining_ticks--;
+    if (running->remaining_ticks==0){
+        mythread_exit();
+    }
     if (running->ticks == 0 && running->priority == LOW_PRIORITY){   //Se comprueba si ha terminado y si la prioridad es baja
         running->ticks = QUANTUM_TICKS;
         disable_interrupt();    //Se protege de posibles interrupciones
