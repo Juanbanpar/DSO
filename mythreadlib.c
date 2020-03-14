@@ -4,18 +4,16 @@
 #include <stdlib.h>
 #include <ucontext.h>
 #include <unistd.h>
-#include "my_io.h"
 
+#include "my_io.h"
 #include "mythread.h"
 #include "interrupt.h"
-
 #include "queue.h"
 
 TCB* scheduler();
 void activator();
 void timer_interrupt(int sig);
 void disk_interrupt(int sig);
-
 
 /* Array of state thread control blocks: the process allows a maximum of N threads */
 static TCB t_state[N]; 
@@ -47,7 +45,6 @@ void function_thread(int sec)
     }
     mythread_exit();
 }
-
 
 /* Initialize the thread library */
 void init_mythreadlib() 
@@ -105,7 +102,6 @@ void init_mythreadlib()
   init_interrupt();
 }
 
-
 /* Create and intialize a new thread with body fun_addr and one integer argument */ 
 int mythread_create (void (*fun_addr)(),int priority,int seconds)
 {
@@ -143,35 +139,23 @@ int mythread_create (void (*fun_addr)(),int priority,int seconds)
   t_state[i].run_env.uc_stack.ss_flags = 0;
   makecontext(&t_state[i].run_env, fun_addr,2,seconds);
 
-    if(t_state[i].priority == LOW_PRIORITY) {
-            disable_interrupt();
-            enqueue(q_low, &t_state[i]);
-            enable_interrupt();
-    }
-
-    if(t_state[i].priority == HIGH_PRIORITY) {
-            disable_interrupt();
-            enqueue(q_high, &t_state[i]);
-            enable_interrupt();
-    }
-
-    //if(t_state[i].priority == HIGH_PRIORITY && running->priority == LOW_PRIORITY) {
-    //        activator(&t_state[i]);
-    //}
-     else if(t_state[i].priority == HIGH_PRIORITY) {
-            if(t_state[i].remaining_ticks < running->remaining_ticks){ //expulsar al proceso si se mete uno que dura menos
-              activator(&t_state[i]);
-            }else{// sino todo sigue su cauce
-              disable_interrupt();
-              sorted_enqueue(q_high, &t_state[i], t_state[i].remaining_ticks);
-              enable_interrupt();
-            }      
-    }
-  
+  if(t_state[i].priority == LOW_PRIORITY) {
+    disable_interrupt();
+    enqueue(q_low, &t_state[i]);
+    enable_interrupt();
+  }
+  else if(t_state[i].priority == HIGH_PRIORITY) {
+    if(t_state[i].remaining_ticks < running->remaining_ticks){ //expulsar al proceso si se mete uno que dura menos
+        sorted_enqueue(q_high, &running, running->remaining_ticks);
+        activator(&t_state[i]);
+    }else{// sino todo sigue su cauce
+        disable_interrupt();
+        sorted_enqueue(q_high, &t_state[i], t_state[i].remaining_ticks);
+        enable_interrupt();
+    }      
+  }
   return i;
 } 
-/****** End my_thread_create() ******/
-
 
 /* Read disk syscall */
 int read_disk()
@@ -179,12 +163,10 @@ int read_disk()
    return 1;
 }
 
-/* Disk interrupt  */
 void disk_interrupt(int sig)
 {
 
 }
-
 
 /* Free terminated thread and exits */
 void mythread_exit() {
@@ -198,7 +180,6 @@ void mythread_exit() {
   activator(next);
 }
 
-
 void mythread_timeout(int tid) {
 
     printf("*** THREAD %d EJECTED\n", tid);
@@ -209,8 +190,6 @@ void mythread_timeout(int tid) {
     activator(next);
 }
 
-
-/* Sets the priority of the calling thread */
 void mythread_setpriority(int priority) 
 {
   int tid = mythread_gettid();	
@@ -220,36 +199,20 @@ void mythread_setpriority(int priority)
   }
 }
 
-/* Returns the priority of the calling thread */
 int mythread_getpriority(int priority) 
 {
   int tid = mythread_gettid();	
   return t_state[tid].priority;
 }
 
-
-/* Get the current thread id.  */
 int mythread_gettid(){
   if (!init) { init_mythreadlib(); init=1;}
   return current;
 }
 
-
 /* SJF para alta prioridad, RR para baja*/
-
 TCB* scheduler()
 {
-//   int i;
-//   for(i=0; i<N; i++)
-//   {
-//     if (t_state[i].state == INIT) 
-//     {
-//       current = i;
-// 	    return &t_state[i];
-//     }
-//   }
-//   printf("mythread_free: No thread in the system\nExiting...\n");	
-//   exit(1);
     
     if(queue_empty(q_low) == 1 && queue_empty(q_high) == 1) {
         /* No threads waiting */
@@ -275,8 +238,6 @@ TCB* scheduler()
     return next;
 }
 
-
-/* Timer interrupt */
 void timer_interrupt(int sig)
 {
 
@@ -300,7 +261,6 @@ void timer_interrupt(int sig)
     
 } 
 
-/* Activator */
 void activator(TCB* next)
 {
     TCB *procesoActual = running;
@@ -309,9 +269,6 @@ void activator(TCB* next)
 
     if (procesoActual->state == FREE){ /*Si el proceso en marcha termina imprimimos por pantalla y ponemos el contexto del nuevo */
         printf("*** THREAD %d TERMINATED : SETCONTEXT OF %d\n", procesoActual->tid, next->tid); 
-        //if (next->priority == LOW_PRIORITY){/* en  caso de que sea de baja prioridad el nuevo, reactivamos las interrupciones, en caso de alta no, pues se tiene que ejecutar hasta su fin */
-          //  enable_interrupt();
-        //}
         //El scheduler ya devuelve el proceso de prioridad que toque, a si que solo lo ponemos a ejecutar
         setcontext(&(next->run_env));/* se pone el contexto del nuevo*/
     } else {
@@ -321,12 +278,8 @@ void activator(TCB* next)
          if(procesoActual->priority == LOW_PRIORITY && next->priority == LOW_PRIORITY) {
             printf("*** SWAPCONTEXT FROM %d TO %d\n", procesoActual->tid, next->tid);
         }
-        //if (next->priority == LOW_PRIORITY){/* en  caso de que sea de baja prioridad el nuevo, reactivamos las interrupciones, en caso de alta no, pues se tiene que ejecutar hasta su fin */
-            //enable_interrupt();
-        //}
         if (swapcontext(&(procesoActual->run_env), &(next->run_env)) == -1){
             printf("mythread_free: After setcontext, should never get here!!...");
         }
     }
 }
- 
