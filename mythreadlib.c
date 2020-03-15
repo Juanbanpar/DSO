@@ -20,6 +20,7 @@ static TCB t_state[N];
 
 struct queue *q_low;
 struct queue *q_high;    //Colas para la planificación RR sin prioridades
+struct queue *q_disk;
 
 /* Current running thread */
 static TCB* running;
@@ -96,6 +97,7 @@ void init_mythreadlib()
     //Se inicializa la cola
     q_low = queue_new();
     q_high = queue_new();
+    q_disk = queue_new();
 
   /* Initialize disk and clock interrupts */
   init_disk_interrupt();
@@ -160,12 +162,34 @@ int mythread_create (void (*fun_addr)(),int priority,int seconds)
 /* Read disk syscall */
 int read_disk()
 {
-   return 1;
+    disable_interrupt();
+    
+    int tid = mythread_gettid();
+    t_state[tid].state = WAITING;
+    enqueue(q_disk, &t_state[tid]);
+    printf("*** THREAD %d READ FROM DISK\n", current);
+    
+    enable_interrupt();
+    activator(scheduler());
+    return 1;
 }
 
 void disk_interrupt(int sig)
 {
+    if(queue_empty(q_disk) != 1 && data_in_page_cache() != 0) {
+        disable_interrupt();
+        TCB* tdisk = dequeue(q_disk);
+        tdisk->state=INIT;
 
+        if(tdisk->priority == LOW_PRIORITY) {
+            enqueue(q_low, tdisk);
+        } else if(tdisk->priority == HIGH_PRIORITY) {
+            enqueue(q_high, tdisk);
+        }
+        
+        printf("*** THREAD %d READY\n", tdisk->tid);
+        enable_interrupt();
+    }
 }
 
 /* Free terminated thread and exits */
@@ -215,6 +239,11 @@ TCB* scheduler()
 {
     
     if(queue_empty(q_low) == 1 && queue_empty(q_high) == 1) {
+        //Si no hay threads en las colas hay que comprobar la cola de las interrupciones de disco
+        if(queue_empty(q_disk) != 1) {
+            return &idle;
+        }
+        
         /* No threads waiting */
         if(running->state != FREE) {
             printf("*** THREAD %d FINISHED\n", current);
@@ -241,7 +270,7 @@ TCB* scheduler()
 void timer_interrupt(int sig)
 {
 
-    if(running->priority== HIGH_PRIORITY){
+    if(running->priority == HIGH_PRIORITY){
       running->remaining_ticks--;
       running->ticks++;
     }
@@ -259,6 +288,10 @@ void timer_interrupt(int sig)
       }
     }
     
+    if(running->tid == -1) {    //Estando en idle llamamos al scheduler para comprobar si hay nuevos threads en las colas
+        activator(scheduler());
+    }
+    
 } 
 
 void activator(TCB* next)
@@ -267,6 +300,10 @@ void activator(TCB* next)
     current = next->tid;
     running = next;
 
+    if(running->state == IDLE) {
+        printf("*** THREAD READY: SET CONTEXT TO %d\n", next->tid);
+        setcontext(&(next->run_env));
+    }
     if (procesoActual->state == FREE){ /*Si el proceso en marcha termina imprimimos por pantalla y ponemos el contexto del nuevo */
         printf("*** THREAD %d TERMINATED : SETCONTEXT OF %d\n", procesoActual->tid, next->tid); 
         //El scheduler ya devuelve el proceso de prioridad que toque, a si que solo lo ponemos a ejecutar
@@ -283,3 +320,4 @@ void activator(TCB* next)
         }
     }
 }
+ 
