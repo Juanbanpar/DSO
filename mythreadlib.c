@@ -4,10 +4,11 @@
 #include <stdlib.h>
 #include <ucontext.h>
 #include <unistd.h>
-
 #include "my_io.h"
+
 #include "mythread.h"
 #include "interrupt.h"
+
 #include "queue.h"
 
 TCB* scheduler();
@@ -15,11 +16,11 @@ void activator();
 void timer_interrupt(int sig);
 void disk_interrupt(int sig);
 
+
 /* Array of state thread control blocks: the process allows a maximum of N threads */
 static TCB t_state[N]; 
 
-struct queue *q_low;
-struct queue *q_high;    //Colas para la planificación RR sin prioridades
+struct queue *q;    //Cola para la planificación RR sin prioridades
 
 /* Current running thread */
 static TCB* running;
@@ -45,6 +46,7 @@ void function_thread(int sec)
     }
     mythread_exit();
 }
+
 
 /* Initialize the thread library */
 void init_mythreadlib() 
@@ -92,15 +94,14 @@ void init_mythreadlib()
 
   t_state[0].tid = 0;
   running = &t_state[0];
- 
     //Se inicializa la cola
-    q_low = queue_new();
-    q_high = queue_new();
+    q = queue_new();
 
   /* Initialize disk and clock interrupts */
   init_disk_interrupt();
   init_interrupt();
 }
+
 
 /* Create and intialize a new thread with body fun_addr and one integer argument */ 
 int mythread_create (void (*fun_addr)(),int priority,int seconds)
@@ -125,7 +126,8 @@ int mythread_create (void (*fun_addr)(),int priority,int seconds)
   t_state[i].function = fun_addr;
   t_state[i].execution_total_ticks = seconds_to_ticks(seconds);
   t_state[i].remaining_ticks = t_state[i].execution_total_ticks;
-  t_state[i].rodaja = 20; //parece ser que 20ticks son 100 ms
+  t_state[i].rodaja = QUANTUM_TICKS; //parece ser que 20ticks son 100 ms
+  t_state[i].ticks=0;
   t_state[i].run_env.uc_stack.ss_sp = (void *)(malloc(STACKSIZE));
   
   if(t_state[i].run_env.uc_stack.ss_sp == NULL)
@@ -139,32 +141,15 @@ int mythread_create (void (*fun_addr)(),int priority,int seconds)
   t_state[i].run_env.uc_stack.ss_flags = 0;
   makecontext(&t_state[i].run_env, fun_addr,2,seconds);
 
-  if(t_state[i].priority == LOW_PRIORITY) {
+    //Se añade el nuevo thread a la cola
     disable_interrupt();
-    enqueue(q_low, &t_state[i]);
+    enqueue(q, &t_state[i]);
     enable_interrupt();
-  }
-  else if(t_state[i].priority == HIGH_PRIORITY) {
-   if(running->priority == LOW_PRIORITY){
-      disable_interrupt();
-      enqueue(q_low, running);
-      sorted_enqueue(q_high, &t_state[i], t_state[i].remaining_ticks);
-      enable_interrupt();
-      TCB* next = scheduler(); 
-      activator(next);
-      return i;
-    }
-    if(t_state[i].remaining_ticks < running->remaining_ticks){ //expulsar al proceso si se mete uno que dura menos
-        sorted_enqueue(q_high, running, running->remaining_ticks);
-        activator(&t_state[i]);
-    }else{// sino todo sigue su cauce
-        disable_interrupt();
-        sorted_enqueue(q_high, &t_state[i], t_state[i].remaining_ticks);
-        enable_interrupt();
-    }      
-  }
+  
   return i;
 } 
+/****** End my_thread_create() ******/
+
 
 /* Read disk syscall */
 int read_disk()
@@ -172,10 +157,12 @@ int read_disk()
    return 1;
 }
 
+/* Disk interrupt  */
 void disk_interrupt(int sig)
 {
 
 }
+
 
 /* Free terminated thread and exits */
 void mythread_exit() {
@@ -189,6 +176,7 @@ void mythread_exit() {
   activator(next);
 }
 
+
 void mythread_timeout(int tid) {
 
     printf("*** THREAD %d EJECTED\n", tid);
@@ -199,6 +187,8 @@ void mythread_timeout(int tid) {
     activator(next);
 }
 
+
+/* Sets the priority of the calling thread */
 void mythread_setpriority(int priority) 
 {
   int tid = mythread_gettid();	
@@ -208,97 +198,96 @@ void mythread_setpriority(int priority)
   }
 }
 
+/* Returns the priority of the calling thread */
 int mythread_getpriority(int priority) 
 {
   int tid = mythread_gettid();	
   return t_state[tid].priority;
 }
 
+
+/* Get the current thread id.  */
 int mythread_gettid(){
   if (!init) { init_mythreadlib(); init=1;}
   return current;
 }
 
+
 /* SJF para alta prioridad, RR para baja*/
+
 TCB* scheduler()
 {
+//   int i;
+//   for(i=0; i<N; i++)
+//   {
+//     if (t_state[i].state == INIT) 
+//     {
+//       current = i;
+// 	    return &t_state[i];
+//     }
+//   }
+//   printf("mythread_free: No thread in the system\nExiting...\n");	
+//   exit(1);
     
-    if(queue_empty(q_low) == 1 && queue_empty(q_high) == 1) {
-        /* No threads waiting */
-        if(running->state != FREE) {
-            printf("*** THREAD %d FINISHED\n", current);
-        }
-        printf("FINISH\n");
+    if(queue_empty(q) == 1) {
+        //Si la cola está vacía significa que no quedan threads por planificar
+        printf("mythread_free: No thread in the system\nExiting...\n");	
         exit(1);
     }
 
-    if(queue_empty(q_high) != 1) {
-        /* High priority threads waiting to be executed */
-        disable_interrupt();
-        TCB* nextH = dequeue(q_high);
-        enable_interrupt();
-        return nextH;
-    }else{
-      printf("PATATA");
-      /* No high priority threads waiting, execute low priority ones */
+    //Se desencola el siguiente thread de la cola y se devuelve como resultado
     disable_interrupt();
-    TCB* next = dequeue(q_low);
+    TCB* next = dequeue(q);
     enable_interrupt();
+
     return next;
-    }
-    
 }
 
+
+/* Timer interrupt */
 void timer_interrupt(int sig)
 {
+    running->ticks++;   //Se reduce un tick por cada timer_interrupt
     if(QUANTUM_TICKS > running->remaining_ticks){
       running->rodaja=running->remaining_ticks;
     }
     if(running->ticks > running->execution_total_ticks){
       mythread_timeout(running->tid);
     }
-
-    if(running->priority== HIGH_PRIORITY){
-      running->remaining_ticks--;
-      running->ticks++;
+    running->ticks++;
+    running->rodaja--;
+    running->remaining_ticks--;
+    if (running->rodaja == 0){
+        running->rodaja = QUANTUM_TICKS;
+        disable_interrupt();  //Se protege de posibles interrupciones
+        enqueue(q, running);
+        enable_interrupt();
+        TCB* next = scheduler();    //Se obtiene el siguiente proceso
+        activator(next);
     }
-    if(running->priority == LOW_PRIORITY){
-      running->ticks++;   //Se reduce un tick por cada timer_interrupt
-      running->rodaja--;
-      running->remaining_ticks--;
-      if (running->rodaja == 0){   //Se comprueba si ha terminado y si la prioridad es baja
-          running->rodaja = QUANTUM_TICKS;
-          disable_interrupt();  //Se protege de posibles interrupciones
-          enqueue(q_low, running);
-          enable_interrupt();
-          TCB* next = scheduler();    //Se obtiene el siguiente proceso
-          activator(next);
-      }
-    }
-    
 } 
 
+/* Activator */
 void activator(TCB* next)
 {
-    TCB *procesoActual = running;
-    current = next->tid;
-    running = next;
-
-    if (procesoActual->state == FREE){ /*Si el proceso en marcha termina imprimimos por pantalla y ponemos el contexto del nuevo */
-        printf("*** THREAD %d TERMINATED : SETCONTEXT OF %d\n", procesoActual->tid, next->tid); 
-        //El scheduler ya devuelve el proceso de prioridad que toque, a si que solo lo ponemos a ejecutar
-        setcontext(&(next->run_env));/* se pone el contexto del nuevo*/
-    } else {
-        if (procesoActual->priority == LOW_PRIORITY && next->priority == HIGH_PRIORITY){/*si el thread actual es de baja y el siogoente es de alta imprimimos un mensaje, y si son los dos baja, uno distinto*/
-            printf("*** THREAD %d PREEMTED : SETCONTEXT OF %d\n", procesoActual->tid, next->tid);
-            //swapcontext(&(procesoActual->run_env),&(next->run_env));
-        }
-         if(procesoActual->priority == LOW_PRIORITY && next->priority == LOW_PRIORITY) {
-            printf("*** SWAPCONTEXT FROM %d TO %d\n", procesoActual->tid, next->tid);
-        }
-        if (swapcontext(&(procesoActual->run_env), &(next->run_env)) == -1){
-            printf("mythread_free: After setcontext, should never get here!!...");
-        }
+    //Si el siguiente thread es el mismo que el actual no se hace nada
+    if(running == next) return;
+    if(running->state == FREE) {
+        //Thread terminado, se hace setcontext al siguiente
+        printf("*** THREAD %d TERMINATED: SET CONTEXT OF %d\n", running->tid,  next->tid);
+        
+        running = next;
+        current = next->tid;
+        
+        setcontext(&(next->run_env));
+        printf("mythread_free: After setcontext, should never get here!!...\n");
+    } else if(running != next) {
+        //Se debe hacer un swapcontext al siguiente proceso para no perder el actual
+        TCB* aux;
+        aux= running;
+        running = next;
+        current = next->tid;
+        printf("*** SWAPCONTEXT FROM %d TO %d\n", aux->tid, next->tid);
+        swapcontext(&(aux->run_env), &(next->run_env));
     }
 }
- 

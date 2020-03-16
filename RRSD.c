@@ -127,7 +127,8 @@ int mythread_create (void (*fun_addr)(),int priority,int seconds)
   t_state[i].function = fun_addr;
   t_state[i].execution_total_ticks = seconds_to_ticks(seconds);
   t_state[i].remaining_ticks = t_state[i].execution_total_ticks;
-  t_state[i].rodaja = 20; //parece ser que 20ticks son 100 ms
+  t_state[i].rodaja = QUANTUM_TICKS; //parece ser que 20ticks son 100 ms
+  t_state[i].ticks=0;
   t_state[i].run_env.uc_stack.ss_sp = (void *)(malloc(STACKSIZE));
   
   if(t_state[i].run_env.uc_stack.ss_sp == NULL)
@@ -289,7 +290,7 @@ void timer_interrupt(int sig)
       running->rodaja--;
       running->remaining_ticks--;
       if (running->rodaja == 0){   //Se comprueba si ha terminado y si la prioridad es baja
-          running->rodaja = 20;
+          running->rodaja = QUANTUM_TICKS;
           disable_interrupt();  //Se protege de posibles interrupciones
           enqueue(q_low, running);
           enable_interrupt();
