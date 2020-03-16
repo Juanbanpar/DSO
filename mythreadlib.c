@@ -247,7 +247,7 @@ TCB* scheduler()
 /* Timer interrupt */
 void timer_interrupt(int sig)
 {
-    running->ticks++;   //Se reduce un tick por cada timer_interrupt
+      //Se reduce un tick por cada timer_interrupt
     if(QUANTUM_TICKS > running->remaining_ticks){
       running->rodaja=running->remaining_ticks;
     }
