@@ -73,12 +73,14 @@ void init_mythreadlib()
 
   idle.run_env.uc_stack.ss_size = STACKSIZE;
   idle.run_env.uc_stack.ss_flags = 0;
-  idle.ticks = QUANTUM_TICKS;
+  idle.rodaja = QUANTUM_TICKS;
+  idle.ticks = 0;
   makecontext(&idle.run_env, idle_function, 1); 
 
   t_state[0].state = INIT;
   t_state[0].priority = LOW_PRIORITY;
-  t_state[0].ticks = QUANTUM_TICKS;
+  t_state[0].rodaja = QUANTUM_TICKS;
+  t_state[0].ticks = 0;
 
   if(getcontext(&t_state[0].run_env) == -1)
   {
