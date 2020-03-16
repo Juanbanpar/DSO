@@ -250,7 +250,9 @@ void timer_interrupt(int sig)
     if(QUANTUM_TICKS > running.remaining_ticks){
       running.rodaja=running.remaining_ticks;
     }
-    
+    if(running->ticks > running->execution_total_ticks){
+      mythread_timeout(running->tid);
+    }
     running->rodaja--;
     running->remaining_ticks--;
     if (running->rodaja == 0){
