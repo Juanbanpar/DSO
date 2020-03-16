@@ -247,10 +247,14 @@ TCB* scheduler()
 void timer_interrupt(int sig)
 {
     running->ticks++;   //Se reduce un tick por cada timer_interrupt
+    if(QUANTUM_TICKS > running.remaining_ticks){
+      running.rodaja=running.remaining_ticks;
+    }
+    
     running->rodaja--;
     running->remaining_ticks--;
     if (running->rodaja == 0){
-        running->rodaja = 20;
+        running->rodaja = QUANTUM_TICKS;
         disable_interrupt();  //Se protege de posibles interrupciones
         enqueue(q, running);
         enable_interrupt();

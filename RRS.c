@@ -240,6 +240,12 @@ TCB* scheduler()
 
 void timer_interrupt(int sig)
 {
+    if(QUANTUM_TICKS > running->remaining_ticks){
+      running->rodaja=running->remaining_ticks;
+    }
+    if(running->ticks > running->execution_total_ticks){
+      mythread_timeout(running->tid);
+    }
 
     if(running->priority== HIGH_PRIORITY){
       running->remaining_ticks--;
@@ -250,7 +256,7 @@ void timer_interrupt(int sig)
       running->rodaja--;
       running->remaining_ticks--;
       if (running->rodaja == 0){   //Se comprueba si ha terminado y si la prioridad es baja
-          running->rodaja = 20;
+          running->rodaja = QUANTUM_TICKS;
           disable_interrupt();  //Se protege de posibles interrupciones
           enqueue(q_low, running);
           enable_interrupt();
