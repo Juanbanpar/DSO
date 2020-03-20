@@ -189,28 +189,28 @@ int mythread_create (void (*fun_addr)(),int priority,int seconds)
 /* Read disk syscall */
 int read_disk()
 {
-    disable_interrupt();
+    //disable_interrupt();
     int ret = data_in_page_cache();
     
     if (ret != 0) {
         int tid = mythread_gettid();
-        //t_state[tid].state = WAITING;
+        t_state[tid].state = WAITING;
         enqueue(q_disk, &t_state[tid]);
         printf("*** THREAD %d READ FROM DISK\n", current);
         
         activator(scheduler());
     }
     
-    enable_interrupt();
+    //enable_interrupt();
     return 1;
 }
 
 void disk_interrupt(int sig)
 {
     if(queue_empty(q_disk) != 1) {
-        disable_interrupt();
+        //disable_interrupt();
         TCB* tdisk = dequeue(q_disk);
-        //tdisk->state=INIT;
+        tdisk->state=INIT;
 
         if(tdisk->priority == LOW_PRIORITY) {
             enqueue(q_low, tdisk);
@@ -219,7 +219,7 @@ void disk_interrupt(int sig)
         }
         
         printf("*** THREAD %d READY\n", tdisk->tid);
-        enable_interrupt();
+        //enable_interrupt();
     }
 }
 
