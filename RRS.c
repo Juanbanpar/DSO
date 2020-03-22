@@ -257,12 +257,11 @@ TCB* scheduler()
         enable_interrupt();
         return nextH;
     }else{
-      printf("PATATA");
-      /* No high priority threads waiting, execute low priority ones */
-    disable_interrupt();
-    TCB* next = dequeue(q_low);
-    enable_interrupt();
-    return next;
+        /* No high priority threads waiting, execute low priority ones */
+        disable_interrupt();
+        TCB* next = dequeue(q_low);
+        enable_interrupt();
+        return next;
     }
     
 }
@@ -286,7 +285,6 @@ void timer_interrupt(int sig)
       running->rodaja--;
       running->remaining_ticks--;
       if (running->rodaja == 0){   //Se comprueba si ha terminado y si la prioridad es baja
-          //running->remaining_ticks+=QUANTUM_TICKS;
           running->rodaja = QUANTUM_TICKS;
           disable_interrupt();  //Se protege de posibles interrupciones
           enqueue(q_low, running);
@@ -305,13 +303,12 @@ void activator(TCB* next)
     running = next;
     if(procesoActual == next) return;
     if (procesoActual->state == FREE){ /*Si el proceso en marcha termina imprimimos por pantalla y ponemos el contexto del nuevo */
-        printf("*** THREAD %d TERMINATED : SETCONTEXT OF %d\n", procesoActual->tid, next->tid); 
+        printf("*** THREAD %d TERMINATED: SETCONTEXT OF %d\n", procesoActual->tid, next->tid); 
         //El scheduler ya devuelve el proceso de prioridad que toque, a si que solo lo ponemos a ejecutar
         setcontext(&(next->run_env));/* se pone el contexto del nuevo*/
     } else {
         if (procesoActual->priority == LOW_PRIORITY && next->priority == HIGH_PRIORITY){/*si el thread actual es de baja y el siogoente es de alta imprimimos un mensaje, y si son los dos baja, uno distinto*/
-            printf("*** THREAD %d PREEMTED : SETCONTEXT OF %d\n", procesoActual->tid, next->tid);
-            //swapcontext(&(procesoActual->run_env),&(next->run_env));
+            printf("*** THREAD %d PREEMTED: SETCONTEXT OF %d\n", procesoActual->tid, next->tid);
         }
          if(procesoActual->priority == LOW_PRIORITY && next->priority == LOW_PRIORITY) {
             printf("*** SWAPCONTEXT FROM %d TO %d\n", procesoActual->tid, next->tid);
