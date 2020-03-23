@@ -149,37 +149,36 @@ int mythread_create (void (*fun_addr)(),int priority,int seconds)
   if(t_state[i].priority == LOW_PRIORITY) {
     
     disable_interrupt();
+    disable_disk_interrupt();
     enqueue(q_low, &t_state[i]);
+    enable_disk_interrupt();
     enable_interrupt();
-    /*if(running->tid==0 && apanyo==0){
-      return i;
-    }*/
   }
   else if(t_state[i].priority == HIGH_PRIORITY) {
    if(running->priority == LOW_PRIORITY){
-     /*if(running->tid==0 && apanyo==0){
-       disable_interrupt();
-        sorted_enqueue(q_high, &t_state[i], t_state[i].remaining_ticks);
-        enable_interrupt();
-      return i;
-    }*/
       disable_interrupt();
+      disable_disk_interrupt();
       running->rodaja=QUANTUM_TICKS;
       enqueue(q_low, running);
       sorted_enqueue(q_high, &t_state[i], t_state[i].remaining_ticks);
+      enable_disk_interrupt();
       enable_interrupt();
       TCB* next = scheduler(); 
       activator(next);
       return i;
     }
     if(t_state[i].remaining_ticks < running->remaining_ticks){ //expulsar al proceso si se mete uno que dura menos
-    disable_interrupt();
+        disable_interrupt();
+        disable_disk_interrupt();
         sorted_enqueue(q_high, running, running->remaining_ticks);
+        enable_disk_interrupt();
         enable_interrupt();
         activator(&t_state[i]);
     }else{// sino todo sigue su cauce
         disable_interrupt();
+        disable_disk_interrupt();
         sorted_enqueue(q_high, &t_state[i], t_state[i].remaining_ticks);
+        enable_disk_interrupt();
         enable_interrupt();
     }      
   }
@@ -189,7 +188,6 @@ int mythread_create (void (*fun_addr)(),int priority,int seconds)
 /* Read disk syscall */
 int read_disk()
 {
-    //disable_interrupt();
     int ret = data_in_page_cache();
     
     if (ret != 0) {
@@ -200,26 +198,30 @@ int read_disk()
         
         activator(scheduler());
     }
-    
-    //enable_interrupt();
     return 1;
 }
 
 void disk_interrupt(int sig)
 {
     if(queue_empty(q_disk) != 1) {
-        //disable_interrupt();
         TCB* tdisk = dequeue(q_disk);
         tdisk->state=INIT;
 
         if(tdisk->priority == LOW_PRIORITY) {
+            disable_interrupt();
+            disable_disk_interrupt();
             enqueue(q_low, tdisk);
+            enable_disk_interrupt();
+            enable_interrupt();
         } else if(tdisk->priority == HIGH_PRIORITY) {
+            disable_interrupt();
+            disable_disk_interrupt();
             enqueue(q_high, tdisk);
+            enable_disk_interrupt();
+            enable_interrupt();
         }
         
         printf("*** THREAD %d READY\n", tdisk->tid);
-        //enable_interrupt();
     }
 }
 
@@ -284,16 +286,19 @@ TCB* scheduler()
     if(queue_empty(q_high) != 1) {
         /* High priority threads waiting to be executed */
         disable_interrupt();
+        disable_disk_interrupt();
         TCB* nextH = dequeue(q_high);
+        enable_disk_interrupt();
         enable_interrupt();
         return nextH;
-    }else{
-      printf("PATATA");
-      /* No high priority threads waiting, execute low priority ones */
-    disable_interrupt();
-    TCB* next = dequeue(q_low);
-    enable_interrupt();
-    return next;
+    } else {
+        /* No high priority threads waiting, execute low priority ones */
+        disable_interrupt();
+        disable_disk_interrupt();
+        TCB* next = dequeue(q_low);
+        enable_disk_interrupt();
+        enable_interrupt();
+        return next;
     }
     
 }
@@ -317,10 +322,11 @@ void timer_interrupt(int sig)
       running->rodaja--;
       running->remaining_ticks--;
       if (running->rodaja == 0){   //Se comprueba si ha terminado y si la prioridad es baja
-          //running->remaining_ticks+=QUANTUM_TICKS;
           running->rodaja = QUANTUM_TICKS;
           disable_interrupt();  //Se protege de posibles interrupciones
+          disable_disk_interrupt();
           enqueue(q_low, running);
+          enable_disk_interrupt();
           enable_interrupt();
           TCB* next = scheduler();    //Se obtiene el siguiente proceso
           activator(next);
@@ -340,13 +346,12 @@ void activator(TCB* next)
         setcontext(&(next->run_env));
     }
     if (procesoActual->state == FREE){ /*Si el proceso en marcha termina imprimimos por pantalla y ponemos el contexto del nuevo */
-        printf("*** THREAD %d TERMINATED : SETCONTEXT OF %d\n", procesoActual->tid, next->tid); 
+        printf("*** THREAD %d TERMINATED: SETCONTEXT OF %d\n", procesoActual->tid, next->tid); 
         //El scheduler ya devuelve el proceso de prioridad que toque, a si que solo lo ponemos a ejecutar
         setcontext(&(next->run_env));/* se pone el contexto del nuevo*/
     } else {
-        if (procesoActual->priority == LOW_PRIORITY && next->priority == HIGH_PRIORITY){/*si el thread actual es de baja y el siogoente es de alta imprimimos un mensaje, y si son los dos baja, uno distinto*/
-            printf("*** THREAD %d PREEMTED : SETCONTEXT OF %d\n", procesoActual->tid, next->tid);
-            //swapcontext(&(procesoActual->run_env),&(next->run_env));
+        if (procesoActual->priority == LOW_PRIORITY && next->priority == HIGH_PRIORITY){ /*si el thread actual es de baja y el siogoente es de alta imprimimos un mensaje, y si son los dos baja, uno distinto*/
+            printf("*** THREAD %d PREEMTED: SETCONTEXT OF %d\n", procesoActual->tid, next->tid);
         }
          if(procesoActual->priority == LOW_PRIORITY && next->priority == LOW_PRIORITY) {
             printf("*** SWAPCONTEXT FROM %d TO %d\n", procesoActual->tid, next->tid);

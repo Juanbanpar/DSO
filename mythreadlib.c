@@ -149,28 +149,36 @@ int mythread_create (void (*fun_addr)(),int priority,int seconds)
   if(t_state[i].priority == LOW_PRIORITY) {
     
     disable_interrupt();
+    disable_disk_interrupt();
     enqueue(q_low, &t_state[i]);
+    enable_disk_interrupt();
     enable_interrupt();
   }
   else if(t_state[i].priority == HIGH_PRIORITY) {
    if(running->priority == LOW_PRIORITY){
       disable_interrupt();
+      disable_disk_interrupt();
       running->rodaja=QUANTUM_TICKS;
       enqueue(q_low, running);
       sorted_enqueue(q_high, &t_state[i], t_state[i].remaining_ticks);
+      enable_disk_interrupt();
       enable_interrupt();
       TCB* next = scheduler(); 
       activator(next);
       return i;
     }
     if(t_state[i].remaining_ticks < running->remaining_ticks){ //expulsar al proceso si se mete uno que dura menos
-    disable_interrupt();
+        disable_interrupt();
+        disable_disk_interrupt();
         sorted_enqueue(q_high, running, running->remaining_ticks);
+        enable_disk_interrupt();
         enable_interrupt();
         activator(&t_state[i]);
     }else{// sino todo sigue su cauce
         disable_interrupt();
+        disable_disk_interrupt();
         sorted_enqueue(q_high, &t_state[i], t_state[i].remaining_ticks);
+        enable_disk_interrupt();
         enable_interrupt();
     }      
   }
@@ -200,17 +208,17 @@ void disk_interrupt(int sig)
         tdisk->state=INIT;
 
         if(tdisk->priority == LOW_PRIORITY) {
-            disable_disk_interrupt();
             disable_interrupt();
+            disable_disk_interrupt();
             enqueue(q_low, tdisk);
-            enable_interrupt();
             enable_disk_interrupt();
+            enable_interrupt();
         } else if(tdisk->priority == HIGH_PRIORITY) {
-            disable_disk_interrupt();
             disable_interrupt();
+            disable_disk_interrupt();
             enqueue(q_high, tdisk);
-            enable_interrupt();
             enable_disk_interrupt();
+            enable_interrupt();
         }
         
         printf("*** THREAD %d READY\n", tdisk->tid);
@@ -277,19 +285,19 @@ TCB* scheduler()
 
     if(queue_empty(q_high) != 1) {
         /* High priority threads waiting to be executed */
-        disable_disk_interrupt();
         disable_interrupt();
+        disable_disk_interrupt();
         TCB* nextH = dequeue(q_high);
-        enable_interrupt();
         enable_disk_interrupt();
+        enable_interrupt();
         return nextH;
     } else {
         /* No high priority threads waiting, execute low priority ones */
-        disable_disk_interrupt();
         disable_interrupt();
+        disable_disk_interrupt();
         TCB* next = dequeue(q_low);
-        enable_interrupt();
         enable_disk_interrupt();
+        enable_interrupt();
         return next;
     }
     
@@ -315,11 +323,11 @@ void timer_interrupt(int sig)
       running->remaining_ticks--;
       if (running->rodaja == 0){   //Se comprueba si ha terminado y si la prioridad es baja
           running->rodaja = QUANTUM_TICKS;
-          disable_disk_interrupt();
           disable_interrupt();  //Se protege de posibles interrupciones
+          disable_disk_interrupt();
           enqueue(q_low, running);
-          enable_interrupt();
           enable_disk_interrupt();
+          enable_interrupt();
           TCB* next = scheduler();    //Se obtiene el siguiente proceso
           activator(next);
       }
