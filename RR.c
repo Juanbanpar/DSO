@@ -5,17 +5,14 @@
 #include <ucontext.h>
 #include <unistd.h>
 #include "my_io.h"
-
 #include "mythread.h"
 #include "interrupt.h"
-
 #include "queue.h"
 
 TCB* scheduler();
 void activator();
 void timer_interrupt(int sig);
 void disk_interrupt(int sig);
-
 
 /* Array of state thread control blocks: the process allows a maximum of N threads */
 static TCB t_state[N]; 
@@ -41,12 +38,9 @@ void function_thread(int sec)
 {
     //time_t end = time(NULL) + sec;
     while(running->remaining_ticks)
-    {
-      //do something
-    }
+    {}
     mythread_exit();
 }
-
 
 /* Initialize the thread library */
 void init_mythreadlib() 
@@ -90,31 +84,29 @@ void init_mythreadlib()
     exit(5);
   }	
 
-  for(i=1; i<N; i++)
-  {
-    t_state[i].state = FREE;
-  }
+  for(i=1; i<N; i++) t_state[i].state = FREE;
 
   t_state[0].tid = 0;
   running = &t_state[0];
-    //Se inicializa la cola
-    q = queue_new();
+  //Se inicializa la cola
+  q = queue_new();
 
   /* Initialize disk and clock interrupts */
   init_disk_interrupt();
   init_interrupt();
 }
 
-
 /* Create and intialize a new thread with body fun_addr and one integer argument */ 
 int mythread_create (void (*fun_addr)(),int priority,int seconds)
 {
   int i;
   
-  if (!init) { init_mythreadlib(); init=1;}
+  if (!init) { 
+    init_mythreadlib();
+    init=1;
+  }
 
-  for (i=0; i<N; i++)
-    if (t_state[i].state == FREE) break;
+  for (i=0; i<N; i++) if (t_state[i].state == FREE) break;
 
   if (i == N) return(-1);
 
@@ -144,15 +136,13 @@ int mythread_create (void (*fun_addr)(),int priority,int seconds)
   t_state[i].run_env.uc_stack.ss_flags = 0;
   makecontext(&t_state[i].run_env, fun_addr,2,seconds);
 
-    //Se añade el nuevo thread a la cola
-    disable_interrupt();
-    enqueue(q, &t_state[i]);
-    enable_interrupt();
+  //Se añade el nuevo thread a la cola
+  disable_interrupt();
+  enqueue(q, &t_state[i]);
+  enable_interrupt();
   
   return i;
 } 
-/****** End my_thread_create() ******/
-
 
 /* Read disk syscall */
 int read_disk()
@@ -160,12 +150,7 @@ int read_disk()
    return 1;
 }
 
-/* Disk interrupt  */
-void disk_interrupt(int sig)
-{
-
-}
-
+void disk_interrupt(int sig){}
 
 /* Free terminated thread and exits */
 void mythread_exit() {
@@ -179,7 +164,6 @@ void mythread_exit() {
   activator(next);
 }
 
-
 void mythread_timeout(int tid) {
 
     printf("*** THREAD %d EJECTED\n", tid);
@@ -190,87 +174,62 @@ void mythread_timeout(int tid) {
     activator(next);
 }
 
-
-/* Sets the priority of the calling thread */
 void mythread_setpriority(int priority) 
 {
   int tid = mythread_gettid();	
   t_state[tid].priority = priority;
-  if(priority ==  HIGH_PRIORITY){
-    t_state[tid].remaining_ticks = 195;
-  }
+  if(priority ==  HIGH_PRIORITY) t_state[tid].remaining_ticks = 195;
 }
 
-/* Returns the priority of the calling thread */
 int mythread_getpriority(int priority) 
 {
   int tid = mythread_gettid();	
   return t_state[tid].priority;
 }
 
-
-/* Get the current thread id.  */
 int mythread_gettid(){
-  if (!init) { init_mythreadlib(); init=1;}
+  if (!init) {
+    init_mythreadlib();
+    init=1;
+  }
   return current;
 }
 
-
-/* SJF para alta prioridad, RR para baja*/
-
 TCB* scheduler()
 {
-//   int i;
-//   for(i=0; i<N; i++)
-//   {
-//     if (t_state[i].state == INIT) 
-//     {
-//       current = i;
-// 	    return &t_state[i];
-//     }
-//   }
-//   printf("mythread_free: No thread in the system\nExiting...\n");	
-//   exit(1);
     
-    if(queue_empty(q) == 1) {
-        //Si la cola está vacía significa que no quedan threads por planificar
-        printf("mythread_free: No thread in the system\nExiting...\n");	
-        exit(1);
-    }
+  if(queue_empty(q) == 1) {
+    //Si la cola está vacía significa que no quedan threads por planificar
+    printf("mythread_free: No thread in the system\nExiting...\n");	
+    exit(1);
+  }
 
-    //Se desencola el siguiente thread de la cola y se devuelve como resultado
-    disable_interrupt();
-    TCB* next = dequeue(q);
-    enable_interrupt();
+  //Se desencola el siguiente thread de la cola y se devuelve como resultado
+  disable_interrupt();
+  TCB* next = dequeue(q);
+  enable_interrupt();
 
-    return next;
+  return next;
 }
 
-
-/* Timer interrupt */
 void timer_interrupt(int sig)
 {
-      //Se reduce un tick por cada timer_interrupt
-    if(QUANTUM_TICKS > running->remaining_ticks){
-      running->rodaja=running->remaining_ticks;
-    }
-    if(running->ticks > running->execution_total_ticks){
-      mythread_timeout(running->tid);
-    }
-    running->ticks++;
-    running->rodaja--;
-    running->remaining_ticks--;
-    if (running->rodaja == 0){
-        running->rodaja = QUANTUM_TICKS;
-        disable_interrupt();  //Se protege de posibles interrupciones
-        enqueue(q, running);
-        enable_interrupt();
-        TCB* next = scheduler();    //Se obtiene el siguiente proceso
-        activator(next);
-    }
+  //Se reduce un tick por cada timer_interrupt
+  if(QUANTUM_TICKS > running->remaining_ticks) running->rodaja=running->remaining_ticks;
+  if(running->ticks > running->execution_total_ticks) mythread_timeout(running->tid);
+  running->ticks++;
+  running->rodaja--;
+  running->remaining_ticks--;
+  if (running->rodaja == 0){
+    running->rodaja = QUANTUM_TICKS;
+    disable_interrupt();  //Se protege de posibles interrupciones
+    enqueue(q, running);
+    enable_interrupt();
+    TCB* next = scheduler();    //Se obtiene el siguiente proceso
+    activator(next);
+  }
 } 
 
-/* Activator */
 void activator(TCB* next)
 {
     //Si el siguiente thread es el mismo que el actual no se hace nada
