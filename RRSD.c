@@ -181,10 +181,10 @@ int read_disk()
 {
   int ret = data_in_page_cache();
     
-  if (ret != 0) {
+  if (ret != 0) { //comprobamos si el dato no está en caché
     int tid = mythread_gettid();
     t_state[tid].state = WAITING;
-    enqueue(q_disk, &t_state[tid]);
+    enqueue(q_disk, &t_state[tid]); //en ese caso se añade a la cola
     printf("*** THREAD %d READ FROM DISK\n", current);
 
     activator(scheduler());
@@ -195,9 +195,11 @@ int read_disk()
 void disk_interrupt(int sig)
 {
   if(queue_empty(q_disk) != 1) {
+    //Desencolamos y cambiamos el estado del proceso
     TCB* tdisk = dequeue(q_disk);
     tdisk->state=INIT;
 
+    //Se añade el proceso a la cola de listos que le corresponde según su prioridad
     if(tdisk->priority == LOW_PRIORITY) {
       disable_interrupt();
       disable_disk_interrupt();
@@ -261,8 +263,9 @@ int mythread_gettid(){
 TCB* scheduler()
 {
   if(queue_empty(q_low) == 1 && queue_empty(q_high) == 1) {
-    /* No threads waiting */
+    //Si no hay threads en las colas
     if(running->state != FREE) printf("*** THREAD %d FINISHED\n", current);
+    //Si no tenemos threads por desencolar pero hay interrupciones de disco pendientes entramos en IDLE
     if(queue_empty(q_disk) != 1) {
       return &idle;
     }
@@ -271,7 +274,7 @@ TCB* scheduler()
   }
 
   if(queue_empty(q_high) != 1) {
-    /* High priority threads waiting to be executed */
+    //Primero ejecutar los de alta prioridad
     disable_interrupt();
     disable_disk_interrupt();
     TCB* nextH = dequeue(q_high);
@@ -279,7 +282,7 @@ TCB* scheduler()
     enable_interrupt();
     return nextH;
   } else {
-    /* No high priority threads waiting, execute low priority ones */
+    //Si no hay threads de alta prioridad pendientes de ejecutar deben ejecutarse los de baja
     disable_interrupt();
     disable_disk_interrupt();
     TCB* next = dequeue(q_low);
@@ -320,7 +323,7 @@ void activator(TCB* next)
   current = next->tid;
   running = next;
   if(procesoActual == next) return;
-  if(running->state == IDLE) {
+  if(running->state == IDLE) {  /*Si estamos en IDLE debemos cambiar de contexto cuando entre un nuevo trhead*/
     printf("*** THREAD READY: SET CONTEXT TO %d\n", next->tid);
     setcontext(&(next->run_env));
   }

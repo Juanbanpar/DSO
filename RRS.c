@@ -221,20 +221,20 @@ int mythread_gettid(){
 TCB* scheduler()
 {
   if(queue_empty(q_low) == 1 && queue_empty(q_high) == 1) {
-    /* No threads waiting */
+    //Si no hay threads en las colas
     if(running->state != FREE) printf("*** THREAD %d FINISHED\n", current);
     printf("FINISH\n");
     exit(1);
   }
 
   if(queue_empty(q_high) != 1) {
-    /* High priority threads waiting to be executed */
+    //Primero ejecutar los de alta prioridad
     disable_interrupt();
     TCB* nextH = dequeue(q_high);
     enable_interrupt();
     return nextH;
   }else{
-    /* No high priority threads waiting, execute low priority ones */
+    //Si no hay threads de alta prioridad pendientes de ejecutar deben ejecutarse los de baja
     disable_interrupt();
     TCB* next = dequeue(q_low);
     enable_interrupt();
