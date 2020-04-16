@@ -31,6 +31,10 @@ if((n = mythread_create(function_thread,HIGH_PRIORITY,5)) == -1){
   
   read_disk();
   read_disk();
+  read_disk();
+  read_disk();
+  read_disk();
+  read_disk();
 
   if((j = mythread_create(function_thread,HIGH_PRIORITY, 2)) == -1){
     printf("thread failed to initialize\n");

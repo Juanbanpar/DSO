@@ -184,7 +184,11 @@ int read_disk()
   if (ret != 0) { //comprobamos si el dato no está en caché
     int tid = mythread_gettid();
     t_state[tid].state = WAITING;
+    disable_interrupt();
+    disable_disk_interrupt();
     enqueue(q_disk, &t_state[tid]); //en ese caso se añade a la cola
+    enable_disk_interrupt();
+    enable_interrupt();
     printf("*** THREAD %d READ FROM DISK\n", current);
 
     activator(scheduler());
