@@ -11,9 +11,9 @@
  */
 
 
-#include "filesystem/filesystem.h" // Headers for the core functionality
-#include "filesystem/auxiliary.h"  // Headers for auxiliary functions
-#include "filesystem/metadata.h"   // Type and structure declaration of the file system
+#include "filesystem.h" // Headers for the core functionality
+#include "auxiliary.h"  // Headers for auxiliary functions
+#include "metadata.h"   // Type and structure declaration of the file system
 
 /*
  * @brief 	Generates the proper file system structure in a storage device, as designed by the student.
@@ -21,7 +21,32 @@
  */
 int mkFS(long deviceSize)
 {
-	return -1;
+	//dejo este trozo de codigo para ti wham, por que te mola comprobar las cosas dos veces con funciones raras
+	/*int fp;
+	fp=fopen(DEVICE_IMAGE,"r");
+	fseek(fp, 0L, SEEK_END);
+	tamanyoDisco= ftell(fp);*/
+	if(deviceSize< 471040 || deviceSize>614400){
+		return -1;
+	}
+	TipoSuperbloque patata;
+	patata.tamDispositivo = deviceSize;
+
+	int numBloques = deviceSize/BLOCK_SIZE;
+	 
+	int numInodos = 48;
+	int tamanoBloquesInodos = numInodos * BLOCK_SIZE; //bytees
+	int tamanoBYTESInodos = sizeof(tamanoBloquesInodos);
+	int numbloquesdatos = numBloques - 2 - numInodos -2 ; //numbloquestotal - 2 del superbloque y arranque - numInodos
+	char imap[numInodos];
+	char bmap[numbloquesdatos];
+
+
+	if(patata.tamDispositivo == 1){
+		return -1;
+	}
+
+	return 0;
 }
 
 /*
