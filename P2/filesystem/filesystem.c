@@ -14,6 +14,9 @@
 #include "filesystem.h" // Headers for the core functionality
 #include "auxiliary.h"  // Headers for auxiliary functions
 #include "metadata.h"   // Type and structure declaration of the file system
+#include <string.h>
+
+struct Superbloque SB;
 
 /*
  * @brief 	Generates the proper file system structure in a storage device, as designed by the student.
@@ -26,9 +29,10 @@ int mkFS(long deviceSize)
 	fp=fopen(DEVICE_IMAGE,"r");
 	fseek(fp, 0L, SEEK_END);
 	tamanyoDisco= ftell(fp);*/
-	if(deviceSize< 471040 || deviceSize>614400){
+	if(deviceSize < 471040 || deviceSize > 614400){
 		return -1;
 	}
+	/*
 	TipoSuperbloque patata;
 	patata.tamDispositivo = deviceSize;
 
@@ -45,8 +49,24 @@ int mkFS(long deviceSize)
 	if(patata.tamDispositivo == 1){
 		return -1;
 	}
-
-	return 0;
+	*/
+    //Inicializar los valores iniciales
+    SB.diskSize = deviceSize;
+    SB.mapaINodos = 0;
+    SB.mapaBloques = 0;
+    SB.numMagico = 69;
+    
+    for(int i = 0; i < MAX_FILES; i++) {
+        strcpy(SB.inodos[i].nombre, "");
+        SB.inodos[i].estado = 0;
+    }
+    
+    if (unmountFS() == -1){
+        printf("Error unmountFS\n");
+        return -1;
+    }
+    
+    return 0;
 }
 
 /*
@@ -55,7 +75,12 @@ int mkFS(long deviceSize)
  */
 int mountFS(void)
 {
-	return -1;
+    if (bread(DEVICE_IMAGE, 0, ((char *)&(SB))) == -1){
+        printf("error bread\n");
+        return -1;
+    }
+
+    return 0;
 }
 
 /*
@@ -64,7 +89,12 @@ int mountFS(void)
  */
 int unmountFS(void)
 {
-	return -1;
+    if (bwrite(DEVICE_IMAGE, 0, ((char *)&(SB))) == -1){
+        printf("error bwrite\n");
+        return -1;
+    }
+
+    return 0;
 }
 
 /*
