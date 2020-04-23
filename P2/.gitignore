@@ -1,2 +1,5 @@
 *.o
+*.a
+create_disk
 filesystem
+data.dat

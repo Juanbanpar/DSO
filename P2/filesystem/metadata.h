@@ -44,9 +44,8 @@ struct Superbloque;
 
 typedef struct INodo {
     char nombre[MAX_NAME_LENGHT];   //Nombre del fichero
-    uint8_t bloque;                 //Número del bloque que al que pertenece
+    uint8_t bloque;                 //Número del bloque que al que pertenece  <-----------------------------
     uint16_t size;                  //Tamaño del fichero en bytes
-    uint16_t puntero;               //Puntero del fichero
     uint8_t estado;                 //Estado del archivo
     uint32_t crc;                   //CRC32
 } INodo;
