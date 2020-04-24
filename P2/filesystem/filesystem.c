@@ -44,17 +44,15 @@ int mkFS(long deviceSize)
             for(int j = 0; j < 5; j++){
                 SB1.inodos[i].bloque[j] = 0;
             }
-            SB1.inodos[i].estado = 0;
             SB1.inodos[i].size = 0;
-            SB1.inodos[i].crc = NULL;
+            //SB1.inodos[i].crc = NULL;
         } else {
             strcpy(SB2.inodos[i-24].nombre, "");
             for(int j = 0; j < 5; j++){
                 SB2.inodos[i-24].bloque[j] = 0;
             }
-            SB2.inodos[i-24].estado = 0;
             SB2.inodos[i].size = 0;
-            SB2.inodos[i].crc = NULL;
+            //SB2.inodos[i].crc = NULL;
         }
     }
     
@@ -72,7 +70,11 @@ int mkFS(long deviceSize)
  */
 int mountFS(void)
 {
-    if (bread(DEVICE_IMAGE, 0, ((char *)&(SB))) == -1){
+    if (bread(DEVICE_IMAGE, 0, ((char *)&(SB1))) == -1){
+        printf("error bread\n");
+        return -1;
+    }
+    if (bread(DEVICE_IMAGE, 1, ((char *)&(SB2))) == -1){
         printf("error bread\n");
         return -1;
     }
@@ -86,7 +88,11 @@ int mountFS(void)
  */
 int unmountFS(void)
 {
-    if (bwrite(DEVICE_IMAGE, 0, ((char *)&(SB))) == -1){
+    if (bwrite(DEVICE_IMAGE, 0, ((char *)&(SB1))) == -1){
+        printf("error bwrite\n");
+        return -1;
+    }
+    if (bwrite(DEVICE_IMAGE, 1, ((char *)&(SB2))) == -1){
         printf("error bwrite\n");
         return -1;
     }
