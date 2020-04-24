@@ -16,7 +16,8 @@
 #include "metadata.h"   // Type and structure declaration of the file system
 #include <string.h>
 
-struct Superbloque SB;
+struct Superbloque1 SB1;
+struct Superbloque2 SB2;
 
 /*
  * @brief 	Generates the proper file system structure in a storage device, as designed by the student.
@@ -24,41 +25,37 @@ struct Superbloque SB;
  */
 int mkFS(long deviceSize)
 {
-	//dejo este trozo de codigo para ti wham, por que te mola comprobar las cosas dos veces con funciones raras
-	/*int fp;
-	fp=fopen(DEVICE_IMAGE,"r");
-	fseek(fp, 0L, SEEK_END);
-	tamanyoDisco= ftell(fp);*/
+
 	if(deviceSize < 471040 || deviceSize > 614400){
 		return -1;
 	}
-	/*
-	TipoSuperbloque patata;
-	patata.tamDispositivo = deviceSize;
 
-	int numBloques = deviceSize/BLOCK_SIZE;
-	 
-	int numInodos = 48;
-	int tamanoBloquesInodos = numInodos * BLOCK_SIZE; //bytees
-	int tamanoBYTESInodos = sizeof(tamanoBloquesInodos);
-	int numbloquesdatos = numBloques - 2 - numInodos -2 ; //numbloquestotal - 2 del superbloque y arranque - numInodos
-	char imap[numInodos];
-	char bmap[numbloquesdatos];
-
-
-	if(patata.tamDispositivo == 1){
-		return -1;
-	}
-	*/
     //Inicializar los valores iniciales
-    SB.diskSize = deviceSize;
-    SB.mapaINodos = 0;
-    SB.mapaBloques = 0;
-    SB.numMagico = 69;
+    SB1.diskSize = deviceSize;
+    SB1.mapaINodos = 0;
+    for (int i = 0; i < 4; i++){
+        SB1.mapaBloques[i] = 0;
+    }
+    SB1.numMagico = 100383438;
     
     for(int i = 0; i < MAX_FILES; i++) {
-        strcpy(SB.inodos[i].nombre, "");
-        SB.inodos[i].estado = 0;
+        if (i < 24){
+            strcpy(SB1.inodos[i].nombre, "");
+            for(int j = 0; j < 5; j++){
+                SB1.inodos[i].bloque[j] = 0;
+            }
+            SB1.inodos[i].estado = 0;
+            SB1.inodos[i].size = 0;
+            SB1.inodos[i].crc = NULL;
+        } else {
+            strcpy(SB2.inodos[i-24].nombre, "");
+            for(int j = 0; j < 5; j++){
+                SB2.inodos[i-24].bloque[j] = 0;
+            }
+            SB2.inodos[i-24].estado = 0;
+            SB2.inodos[i].size = 0;
+            SB2.inodos[i].crc = NULL;
+        }
     }
     
     if (unmountFS() == -1){
