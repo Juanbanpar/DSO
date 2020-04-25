@@ -16,8 +16,7 @@
 #include "metadata.h"   // Type and structure declaration of the file system
 #include <string.h>
 
-struct Superbloque1 SB1;
-struct Superbloque2 SB2;
+Superbloque1 SB1, SB2;
 
 /*
  * @brief 	Generates the proper file system structure in a storage device, as designed by the student.
@@ -32,28 +31,22 @@ int mkFS(long deviceSize)
 
     //Inicializar los valores iniciales
     SB1.diskSize = deviceSize;
-    SB1.mapaINodos = 0;
-    for (int i = 0; i < 4; i++){
-        SB1.mapaBloques[i] = 0;
-    }
+    for(int i=0; i<MAX_FILES; i++) SB1.mapaINodos[i] = "0"; //Seguro que hay una forma mejor
+    SB1.mapaBloques[(deviceSize/BLOCK_SIZE)-2]; //Los bloques de datos son el número de bloques (tamaño de disco entre tamaño de bloque) menos los dos del superbloque
+    for (int i = 0; i < 4; i++) SB1.mapaBloques[i] = "0";
     SB1.numMagico = 100383438;
     
-    for(int i = 0; i < MAX_FILES; i++) {
-        if (i < 24){
-            strcpy(SB1.inodos[i].nombre, "");
-            for(int j = 0; j < 5; j++){
-                SB1.inodos[i].bloque[j] = 0;
-            }
-            SB1.inodos[i].size = 0;
-            //SB1.inodos[i].crc = NULL;
-        } else {
-            strcpy(SB2.inodos[i-24].nombre, "");
-            for(int j = 0; j < 5; j++){
-                SB2.inodos[i-24].bloque[j] = 0;
-            }
-            SB2.inodos[i].size = 0;
-            //SB2.inodos[i].crc = NULL;
+    for(int i = 0; i < MAX_FILES/2; i++) {
+        strcpy(SB1.inodos[i].nombre, "");
+        strcpy(SB2.inodos[i].nombre, "");
+        for(int j = 0; j < 5; j++){
+            SB1.inodos[i].bloque[j] = 0;
+            SB2.inodos[i].bloque[j] = 0;
         }
+        SB1.inodos[i].size = 0;
+        SB2.inodos[i].size = 0;
+        //SB1.inodos[i].crc = NULL;
+        //SB2.inodos[i].crc = NULL;
     }
     
     if (unmountFS() == -1){
@@ -70,12 +63,8 @@ int mkFS(long deviceSize)
  */
 int mountFS(void)
 {
-    if (bread(DEVICE_IMAGE, 0, ((char *)&(SB1))) == -1){
-        printf("error bread\n");
-        return -1;
-    }
-    if (bread(DEVICE_IMAGE, 1, ((char *)&(SB2))) == -1){
-        printf("error bread\n");
+    if (bread(DEVICE_IMAGE, 0, ((char *)&(SB1))) == -1 || bread(DEVICE_IMAGE, 1, ((char *)&(SB2))) == -1){
+        printf("Error bread\n");
         return -1;
     }
 
@@ -88,12 +77,8 @@ int mountFS(void)
  */
 int unmountFS(void)
 {
-    if (bwrite(DEVICE_IMAGE, 0, ((char *)&(SB1))) == -1){
-        printf("error bwrite\n");
-        return -1;
-    }
-    if (bwrite(DEVICE_IMAGE, 1, ((char *)&(SB2))) == -1){
-        printf("error bwrite\n");
+    if (bwrite(DEVICE_IMAGE, 0, ((char *)&(SB1))) == -1 || bwrite(DEVICE_IMAGE, 1, ((char *)&(SB2))) == -1){
+        printf("Error bwrite\n");
         return -1;
     }
 
@@ -106,6 +91,31 @@ int unmountFS(void)
  */
 int createFile(char *fileName)
 {
+
+    //Comprobar si ya existe -> namei?
+
+    int block;
+    for(int i = 0; i < MAX_FILES; i++) {
+        if(bitmap_getbit(SB1.mapaINodos, i)==0){
+            bitmap_setbit(SB1.mapaINodos, i, 1);
+            for(int i = 0 ; i < sizeof(SB1.mapaBloques) ; i++){
+                if(bitmap_getbit(SB1.mapaBloques, i)==0){
+                    bitmap_setbit(SB1.mapaBloques, i, 1);
+                    block = i + 2;  //Los dos bloques de SB
+                    break;
+                }
+            }
+            if(i<MAX_FILES/2){
+                strcpy(SB1.inodos[i].nombre, fileName);
+                SB1.inodos[i].bloque[0]=block;  //Sabemos que es el primer bloque porque estamos creando el fichero
+                return 0;
+            }else{
+                strcpy(SB2.inodos[i].nombre, fileName);
+                SB2.inodos[i].bloque[0]=block;
+                return 0;
+            }
+        }
+    }
 	return -2;
 }
 
