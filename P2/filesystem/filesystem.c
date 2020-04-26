@@ -11,12 +11,16 @@
  */
 
 
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
 #include "filesystem.h" // Headers for the core functionality
 #include "auxiliary.h"  // Headers for auxiliary functions
 #include "metadata.h"   // Type and structure declaration of the file system
-#include <string.h>
 
 Superbloque1 SB1, SB2;
+
+int namei(char *file_name);
 
 /*
  * @brief 	Generates the proper file system structure in a storage device, as designed by the student.
@@ -31,9 +35,9 @@ int mkFS(long deviceSize)
 
     //Inicializar los valores iniciales
     SB1.diskSize = deviceSize;
-    for(int i=0; i<MAX_FILES; i++) SB1.mapaINodos[i] = "0"; //Seguro que hay una forma mejor
-    SB1.mapaBloques[(deviceSize/BLOCK_SIZE)-2]; //Los bloques de datos son el número de bloques (tamaño de disco entre tamaño de bloque) menos los dos del superbloque
-    for (int i = 0; i < 4; i++) SB1.mapaBloques[i] = "0";
+    for(int i=0; i<MAX_FILES; i++) SB1.mapaINodos[i] = 0; //Seguro que hay una forma mejor
+    SB1.mapaBloques = (char *) malloc((deviceSize/BLOCK_SIZE)-2); //Los bloques de datos son el número de bloques (tamaño de disco entre tamaño de bloque) menos los dos del superbloque
+    for (int i = 0; i < 4; i++) SB1.mapaBloques[i] = 0;
     SB1.numMagico = 100383438;
     
     for(int i = 0; i < MAX_FILES/2; i++) {
