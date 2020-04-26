@@ -91,28 +91,30 @@ int unmountFS(void)
  */
 int createFile(char *fileName)
 {
-
-    //Comprobar si ya existe -> namei?
-
-    int block;
-    for(int i = 0; i < MAX_FILES; i++) {
-        if(bitmap_getbit(SB1.mapaINodos, i)==0){
-            bitmap_setbit(SB1.mapaINodos, i, 1);
-            for(int i = 0 ; i < sizeof(SB1.mapaBloques) ; i++){
-                if(bitmap_getbit(SB1.mapaBloques, i)==0){
-                    bitmap_setbit(SB1.mapaBloques, i, 1);
-                    block = i + 2;  //Los dos bloques de SB
-                    break;
+    if(namei(fileName)!=-1){
+        printf("File already exists\n");
+        return -1;
+    }else{
+        int block;
+        for(int i = 0; i < MAX_FILES; i++) {
+            if(bitmap_getbit(SB1.mapaINodos, i)==0){
+                bitmap_setbit(SB1.mapaINodos, i, 1);
+                for(int i = 0 ; i < sizeof(SB1.mapaBloques) ; i++){
+                    if(bitmap_getbit(SB1.mapaBloques, i)==0){
+                        bitmap_setbit(SB1.mapaBloques, i, 1);
+                        block = i + 2;  //Los dos bloques de SB
+                        break;
+                    }
                 }
-            }
-            if(i<MAX_FILES/2){
-                strcpy(SB1.inodos[i].nombre, fileName);
-                SB1.inodos[i].bloque[0]=block;  //Sabemos que es el primer bloque porque estamos creando el fichero
-                return 0;
-            }else{
-                strcpy(SB2.inodos[i].nombre, fileName);
-                SB2.inodos[i].bloque[0]=block;
-                return 0;
+                if(i<MAX_FILES/2){
+                    strcpy(SB1.inodos[i].nombre, fileName);
+                    SB1.inodos[i].bloque[0]=block;  //Sabemos que es el primer bloque porque estamos creando el fichero
+                    return 0;
+                }else{
+                    strcpy(SB2.inodos[i].nombre, fileName);
+                    SB2.inodos[i].bloque[0]=block;
+                    return 0;
+                }
             }
         }
     }
@@ -125,6 +127,31 @@ int createFile(char *fileName)
  */
 int removeFile(char *fileName)
 {
+    int inode;
+    if((inode = namei(fileName))==-1){
+        printf("File does not exist\n");
+        return -1;
+    }else{
+        //Borramos el contenido
+
+        //Borramos el inodo
+        bitmap_setbit(SB1.mapaINodos, inode, 0);
+
+        //Comprobamos en que superbloque está
+        if(inode<MAX_FILES/2){
+            strcpy(SB1.inodos[inode].nombre, "");
+        for(int j = 0; j < 5; j++) SB1.inodos[inode].bloque[j] = 0;
+        SB1.inodos[inode].size = 0;
+        //SB1.inodos[inode].crc = NULL;
+        }else{
+            inode /= 2;
+            strcpy(SB2.inodos[inode].nombre, "");
+            for(int j = 0; j < 5; j++) SB2.inodos[inode].bloque[j] = 0;
+            SB2.inodos[inode].size = 0;
+            //SB2.inodos[inode].crc = NULL;
+
+        }
+    }
 	return -2;
 }
 
@@ -228,4 +255,20 @@ int createLn(char *fileName, char *linkName)
 int removeLn(char *linkName)
 {
     return -2;
+}
+
+/*
+ * @brief 	        Translates name of file into inode
+ * @return 	        i>0 if the file exists, -1 if the file does not exist.
+ * @superblocks 	i<MAX_FILES/2 if the inode in SB1, i>MAX_FILES/2 if the inode in SB2.
+ */
+int namei(char *file_name)
+{
+    for (int i = 0; i < MAX_FILES/2; i++)
+    {
+        if(strcmp(SB1.inodos[i].nombre, file_name)==0) return i;
+        else if(strcmp(SB2.inodos[i].nombre, file_name)==0) return i*2;
+    }
+    
+    return -1;
 }
