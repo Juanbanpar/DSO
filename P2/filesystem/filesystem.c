@@ -132,25 +132,38 @@ int removeFile(char *fileName)
         printf("File does not exist\n");
         return -1;
     }else{
-        //Borramos el contenido
-
-        //Borramos el inodo
+        //Liberamos el inodo
         bitmap_setbit(SB1.mapaINodos, inode, 0);
 
-        //Comprobamos en que superbloque está
-        if(inode<MAX_FILES/2){
-            strcpy(SB1.inodos[inode].nombre, "");
-        for(int j = 0; j < 5; j++) SB1.inodos[inode].bloque[j] = 0;
-        SB1.inodos[inode].size = 0;
-        //SB1.inodos[inode].crc = NULL;
-        }else{
-            inode /= 2;
-            strcpy(SB2.inodos[inode].nombre, "");
-            for(int j = 0; j < 5; j++) SB2.inodos[inode].bloque[j] = 0;
-            SB2.inodos[inode].size = 0;
-            //SB2.inodos[inode].crc = NULL;
-
+        //Borramos el contenido del fichero y el inodo
+        for (int j = 0; j < 5; j++)
+        {
+            if(inode<MAX_FILES/2){
+                strcpy(SB1.inodos[inode].nombre, "");
+                if(SB1.inodos[inode].bloque[j]!=0){
+                    if (bwrite(DEVICE_IMAGE, SB1.inodos[inode].bloque[j], 0) == -1){
+                        printf("Error bwrite\n");
+                        return -1;
+                    }
+                    SB1.inodos[inode].bloque[j] = 0;
+                }
+                SB1.inodos[inode].size = 0;
+                //SB1.inodos[inode].crc = NULL;
+            }else{
+                inode /= 2;
+                strcpy(SB2.inodos[inode].nombre, "");
+                if(SB2.inodos[inode].bloque[j]!=0){
+                    if (bwrite(DEVICE_IMAGE, SB2.inodos[inode].bloque[j], 0) == -1){
+                        printf("Error bwrite\n");
+                        return -1;
+                    }
+                    SB2.inodos[inode].bloque[j] = 0;
+                }
+                SB2.inodos[inode].size = 0;
+                //SB2.inodos[inode].crc = NULL;
+            }
         }
+        return 0;
     }
 	return -2;
 }

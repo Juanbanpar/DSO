@@ -31,7 +31,7 @@ struct Superbloque2;
 typedef struct INodo {
     char nombre[MAX_NAME_LENGHT + 1];   //Nombre del fichero
     uint8_t bloque[5];                  //Bloques en los que está presente
-    uint8_t tipo;                       //Indica si es enlace 
+    uint8_t tipo;                       //1 si es enlace
     uint16_t size;                      //Tamaño del fichero en bytes
     uint32_t crc;                       //CRC32
 } INodo;
@@ -44,8 +44,8 @@ typedef struct INodoX {
 typedef struct Superbloque1 {
     uint32_t numMagico;                 //Número mágico que indentifica nuestro sistema de ficheros
     uint64_t diskSize;                  //El tamaño del disco
-    char mapaINodos[MAX_FILES];                //Mapa de inodos
-    char *mapaBloques;            //Mapa de bloques, se necesitan 4
+    char mapaINodos[MAX_FILES];         //Mapa de inodos
+    char *mapaBloques;                  //Mapa de bloques, se necesitan 4
     struct INodo inodos[MAX_FILES / 2]; //Array de inodos
     char relleno[940];
 } Superbloque1;
