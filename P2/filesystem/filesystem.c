@@ -18,7 +18,9 @@
 #include "auxiliary.h"  // Headers for auxiliary functions
 #include "metadata.h"   // Type and structure declaration of the file system
 
-Superbloque1 SB1, SB2;
+Superbloque1 SB1;
+Superbloque2 SB2;
+INodoX Inodos[48];
 
 int namei(char *file_name);
 
@@ -178,8 +180,21 @@ int removeFile(char *fileName)
  */
 int openFile(char *fileName)
 {
-	return -2;
+    int inodo=0;
+    inodo= namei(fileName);
+    if(inodo==-1){
+        printf("File does not exist\n");
+        return -1;
+    }
+    if(Inodos[inodo].estado==1){
+        return -2; //Ya esta abierto, cuidadito
+    }else{
+        Inodos[inodo].estado=1;
+        Inodos[inodo].posPuntero=0;
+    }
+    return inodo;
 }
+
 
 /*
  * @brief	Closes a file.
@@ -187,7 +202,55 @@ int openFile(char *fileName)
  */
 int closeFile(int fileDescriptor)
 {
-	return -1;
+    if(fileDescriptor<0){
+        return -1; //el fichero no existe
+    }
+    Inodos[fileDescriptor].estado=0;
+    Inodos[fileDescriptor].posPuntero=0;
+	return 0;
+}
+
+int bmap(int i, int pos){
+    int bloquepuntero=0;
+    if(i<24){
+        if(pos<=2048){
+            bloquepuntero = SB1.inodos[i].bloque[0];
+        }
+        if(pos<=4096){
+            bloquepuntero = SB1.inodos[i].bloque[1];
+        }
+        if(pos<=6144){
+            bloquepuntero = SB1.inodos[i].bloque[2];
+        }
+        if(pos<=8192){
+            bloquepuntero = SB1.inodos[i].bloque[3];
+        }
+        if(pos<=10240){
+            bloquepuntero = SB1.inodos[i].bloque[4];
+        }
+            
+    }else{
+        if(pos<=2048){
+            bloquepuntero = SB2.inodos[i].bloque[0];
+        }
+        if(pos<=4096){
+            bloquepuntero = SB2.inodos[i].bloque[1];
+        }
+        if(pos<=6144){
+            bloquepuntero = SB2.inodos[i].bloque[2];
+        }
+        if(pos<=8192){
+            bloquepuntero = SB2.inodos[i].bloque[3];
+        }
+        if(pos<=10240){
+            bloquepuntero = SB2.inodos[i].bloque[4];
+        }
+    }
+
+    if(bloquepuntero==0){
+        return -1; //el fichero no tiene nada
+    }
+    return bloquepuntero;
 }
 
 /*
@@ -196,6 +259,43 @@ int closeFile(int fileDescriptor)
  */
 int readFile(int fileDescriptor, void *buffer, int numBytes)
 {
+    char buff[BLOCK_SIZE];
+    int b_id;
+    if(fileDescriptor<24){
+        //se comprueba que el fichero este abierto
+        if(Inodos[fileDescriptor].estado==1){
+            //se lee lo justo, sino se lee hasta el maximo posible
+            if(Inodos[fileDescriptor].posPuntero+numBytes > SB1.inodos[fileDescriptor].size){
+                numBytes = SB1.inodos[fileDescriptor].size - Inodos[fileDescriptor].posPuntero;
+            }
+            if(numBytes <= 0){
+                return 0; //tronco, leiste de mas y se fue a la verga
+            }
+            b_id = bmap(fileDescriptor, Inodos[fileDescriptor].posPuntero);
+            bread(DEVICE_IMAGE, b_id, buff);
+            memcpy(buffer, (void *) buff, numBytes);
+            Inodos[fileDescriptor].posPuntero+= numBytes;
+            return numBytes;
+        }
+        
+    }else{
+        //se comprueba que el fichero este abierto
+        if(Inodos[fileDescriptor].estado==1){
+            if(Inodos[fileDescriptor].posPuntero+numBytes > SB2.inodos[fileDescriptor].size){
+                numBytes = SB2.inodos[fileDescriptor].size - Inodos[fileDescriptor].posPuntero;
+            }
+            if(numBytes <= 0){
+                return 0; //tronco, leiste de mas y se fue a la verga
+            }
+            b_id = bmap(fileDescriptor, Inodos[fileDescriptor].posPuntero);
+            bread(DEVICE_IMAGE, b_id, buff);
+            memcpy(buffer, (void *) buff, numBytes);
+            Inodos[fileDescriptor].posPuntero+= numBytes;
+            return numBytes;
+        }
+        
+    }
+
 	return -1;
 }
 
@@ -205,6 +305,46 @@ int readFile(int fileDescriptor, void *buffer, int numBytes)
  */
 int writeFile(int fileDescriptor, void *buffer, int numBytes)
 {
+    char buff[BLOCK_SIZE];
+    int b_id;
+    if(fileDescriptor<24){
+        //se comprueba que el fichero este abierto
+        if(Inodos[fileDescriptor].estado==1){
+            //se escribe lo justo, sino se escribe hasta el maximo posible
+            if(Inodos[fileDescriptor].posPuntero+numBytes > BLOCK_SIZE){
+                numBytes = BLOCK_SIZE - Inodos[fileDescriptor].posPuntero;
+            }
+            if(numBytes <= 0){
+                return 0; //tronco, quieres de mas y no hay espacio
+            }
+            b_id = bmap(fileDescriptor, Inodos[fileDescriptor].posPuntero);
+            bread(DEVICE_IMAGE, b_id, buff);
+            memcpy(buffer, (void *) buff, numBytes);
+            bwrite(DEVICE_IMAGE, b_id,buff);
+            Inodos[fileDescriptor].posPuntero+= numBytes;
+            SB1.inodos[fileDescriptor].size+= numBytes;
+            return numBytes;
+        }
+        
+    }else{
+        //se comprueba que el fichero este abierto
+        if(Inodos[fileDescriptor].estado==1){
+            if(Inodos[fileDescriptor].posPuntero+numBytes > BLOCK_SIZE){
+                numBytes = BLOCK_SIZE - Inodos[fileDescriptor].posPuntero;
+            }
+            if(numBytes <= 0){
+                return 0; //tronco, quieres de mas y no hay espacio
+            }
+            b_id = bmap(fileDescriptor, Inodos[fileDescriptor].posPuntero);
+            bread(DEVICE_IMAGE, b_id, buff);
+            memcpy(buffer, (void *) buff, numBytes);
+            bwrite(DEVICE_IMAGE, b_id,buff);
+            Inodos[fileDescriptor].posPuntero+= numBytes;
+            SB1.inodos[fileDescriptor].size+= numBytes;
+            return numBytes;
+        }
+        
+    }
 	return -1;
 }
 
@@ -214,7 +354,64 @@ int writeFile(int fileDescriptor, void *buffer, int numBytes)
  */
 int lseekFile(int fileDescriptor, long offset, int whence)
 {
-	return -1;
+    if(fileDescriptor<24){
+        //comprobar que el fichero existe
+        if (strcmp(SB1.inodos[fileDescriptor].nombre,"")==0){
+            printf("File not exists\n");
+            return -1;
+	    }
+        //comprobar que esta abierto el fichero
+        if(Inodos[fileDescriptor].estado==0){
+            return -1;
+        }
+
+        //ver si se quedaria fuera de los limites del fichero
+        if (whence == FS_SEEK_CUR && (Inodos[fileDescriptor].posPuntero + offset > MAX_FILE_SIZE|| Inodos[fileDescriptor].posPuntero + offset < 0)){
+			printf("Pointer out of range\n");
+			return -1;
+		}
+ 
+        if(whence == FS_SEEK_CUR){
+             Inodos[fileDescriptor].posPuntero += offset;
+        }
+        if(whence == FS_SEEK_BEGIN){
+            Inodos[fileDescriptor].posPuntero = 0;
+        }
+        if(whence == FS_SEEK_END){
+            Inodos[fileDescriptor].posPuntero = MAX_FILE_SIZE-1; //duda aqui de si se quita 1
+        }
+    }else
+    {
+        //comprobar que el fichero existe
+       if (strcmp(SB2.inodos[fileDescriptor].nombre,"")==0){
+            printf("File not exists\n");
+            return -1;
+	    }
+        //comprobar que esta abierto el fichero
+        if(Inodos[fileDescriptor].estado==0){
+            return -1;
+        }
+
+        //ver si se quedaria fuera de los limites del fichero
+        if (whence == FS_SEEK_CUR && (Inodos[fileDescriptor].posPuntero + offset > MAX_FILE_SIZE|| Inodos[fileDescriptor].posPuntero + offset < 0)){
+			printf("Pointer out of range\n");
+			return -1;
+		}
+ 
+        if(whence == FS_SEEK_CUR){
+             Inodos[fileDescriptor].posPuntero += offset;
+        }
+        if(whence == FS_SEEK_BEGIN){
+            Inodos[fileDescriptor].posPuntero = 0;
+        }
+        if(whence == FS_SEEK_END){
+            Inodos[fileDescriptor].posPuntero = MAX_FILE_SIZE-1; //duda aqui de si se quita 1
+        }
+    }
+    
+    
+
+	return 0;
 }
 
 /*
