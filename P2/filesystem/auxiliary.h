@@ -9,3 +9,5 @@
  * @date	Last revision 01/04/2020
  *
  */
+
+int bmap(int i, int pos);

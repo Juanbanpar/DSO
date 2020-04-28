@@ -421,6 +421,38 @@ int lseekFile(int fileDescriptor, long offset, int whence)
 
 int checkFile (char * fileName)
 {
+    int inodo = 0;
+    inodo = namei(fileName);
+    
+    if(inodo == -1){
+        printf("File does not exist\n");
+        return -1;
+    }
+    
+    if(inodo < MAX_FILES/2) {
+        unsigned char buffer[SB1.inodos[inodo].size];
+        readFile(inodo, buffer, SB1.inodos[inodo].size);
+        uint32_t val = CRC32(buffer, SB1.inodos[inodo].size);
+        
+        if (SB1.inodos[inodo].crc == val) {
+            return 0;
+        } else {
+            return -1;
+        }
+    } else {
+        inodo /= 2;
+        unsigned char buffer[SB2.inodos[inodo].size];
+        readFile(inodo, buffer, SB2.inodos[inodo].size);
+        uint32_t val = CRC32(buffer, SB2.inodos[inodo].size);
+        SB2.inodos[inodo].crc = val;
+        
+        if (SB2.inodos[inodo].crc == val) {
+            return 0;
+        } else {
+            return -1;
+        }
+    }
+    
     return -2;
 }
 
@@ -431,6 +463,31 @@ int checkFile (char * fileName)
 
 int includeIntegrity (char * fileName)
 {
+    int inodo = 0;
+    inodo = namei(fileName);
+    
+    if(inodo == -1){
+        printf("File does not exist\n");
+        return -1;
+    }
+    
+    if(inodo < MAX_FILES/2) {
+        unsigned char buffer[SB1.inodos[inodo].size];
+        readFile(inodo, buffer, SB1.inodos[inodo].size);
+        uint32_t val = CRC32(buffer, SB1.inodos[inodo].size);
+        SB1.inodos[inodo].crc = val;
+        
+        return 0;
+    } else {
+        inodo /= 2;
+        unsigned char buffer[SB2.inodos[inodo].size];
+        readFile(inodo, buffer, SB2.inodos[inodo].size);
+        uint32_t val = CRC32(buffer, SB2.inodos[inodo].size);
+        SB2.inodos[inodo].crc = val;
+        
+        return 0;
+    }
+    
     return -2;
 }
 
@@ -440,7 +497,8 @@ int includeIntegrity (char * fileName)
  */
 int openFileIntegrity(char *fileName)
 {
-
+    checkFile (fileName);
+    openFile(fileName);
     return -2;
 }
 
@@ -450,6 +508,14 @@ int openFileIntegrity(char *fileName)
  */
 int closeFileIntegrity(int fileDescriptor)
 {
+    if(fileDescriptor < 24) {
+        includeIntegrity (SB1.inodos[fileDescriptor].nombre);
+        closeFile(fileDescriptor);
+    } else {
+        includeIntegrity (SB1.inodos[fileDescriptor/2].nombre);
+        closeFile(fileDescriptor);
+    }
+    
     return -1;
 }
 
