@@ -476,7 +476,54 @@ int closeFileIntegrity(int fileDescriptor)
  */
 int createLn(char *fileName, char *linkName)
 {
-    return -1;
+    int inodo = 0;
+    inodo = namei(fileName);
+    
+    if(inodo == -1){
+        printf("File does not exist\n");
+        return -1;
+    }
+    
+    for(int i = 0; i < MAX_FILES; i++) {
+        if(bitmap_getbit(SB1.mapaINodos, i)==0){
+            bitmap_setbit(SB1.mapaINodos, i, 1);
+            for(int i = 0 ; i < sizeof(SB1.mapaBloques) ; i++){
+                if(bitmap_getbit(SB1.mapaBloques, i)==0){
+                    bitmap_setbit(SB1.mapaBloques, i, 1);
+                    break;
+                }
+            }
+            if(i<MAX_FILES/2){
+                strcpy(SB1.inodos[i].nombre, linkName);
+                SB1.inodos[i].tipo = 1;
+                SB1.inodos[i].size = 0; //Supongo que es cero pero NPI
+                for(int j = 0; j < 5; j++) {
+                    if (inodo < MAX_FILES/2) {
+                        SB1.inodos[i].bloque[j] = SB1.inodos[inodo].bloque[j];
+                    } else {
+                        inodo /= 2;
+                        SB1.inodos[i].bloque[j] = SB2.inodos[inodo].bloque[j];
+                    }
+                }
+                return 0;
+            }else{
+                strcpy(SB2.inodos[i].nombre, linkName);
+                SB2.inodos[i].tipo = 1;
+                SB2.inodos[i].size = 0; //Supongo que es cero pero NPI
+                for(int j = 0; j < 5; j++) {
+                    if (inodo < MAX_FILES/2) {
+                        SB2.inodos[i].bloque[j] = SB1.inodos[inodo].bloque[j];
+                    } else {
+                        inodo /= 2;
+                        SB2.inodos[i].bloque[j] = SB2.inodos[inodo].bloque[j];
+                    }
+                }
+                return 0;
+            }
+        }
+    }
+    
+    return -2;
 }
 
 /*
@@ -485,6 +532,23 @@ int createLn(char *fileName, char *linkName)
  */
 int removeLn(char *linkName)
 {
+    int inodo = 0;
+    inodo = namei(linkName);
+    
+    if(inodo == -1){
+        printf("File does not exist\n");
+        return -1;
+    }
+    
+    if(inodo < MAX_FILES/2) {
+        strcpy(SB1.inodos[inodo].nombre, "");
+        return 0;
+    } else {
+        inodo /= 2;
+        strcpy(SB2.inodos[inodo].nombre, "");        
+        return 0;
+    }
+    
     return -2;
 }
 
