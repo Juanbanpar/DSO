@@ -58,6 +58,8 @@ int main()
 	}
 	fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST createFile ", ANSI_COLOR_GREEN, "SUCCESS\n", ANSI_COLOR_RESET);
 
+	ret = unmountFS();
+	ret = mountFS();
 	
 	int patata = openFile("/test.txt");
 	//int namelo=namei("/test.txt");
@@ -76,12 +78,13 @@ int main()
 	nepe=closeFile(patata);
 	printf("Valor del close file: %d\n", nepe);
     
-    /*
+    
     nepe=removeFile("/test.txt");
 	printf("Valor del remove file: %d\n", nepe);
-    patata = openFile("/test.txt");
-    printf("Valor del open file: %d\n", patata);
-    */
+	
+    //patata = openFile("/test.txt");
+    //printf("Valor del open file: %d\n", patata);
+    
     
     
     nepe=includeIntegrity("/test.txt");
