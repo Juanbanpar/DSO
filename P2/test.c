@@ -58,6 +58,23 @@ int main()
 	}
 	fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST createFile ", ANSI_COLOR_GREEN, "SUCCESS\n", ANSI_COLOR_RESET);
 
+	
+	int patata = openFile("/test.txt");
+	//int namelo=namei("/test.txt");
+	//printf("%d", namelo);
+	printf("Descriptor del fichero %d\n", patata);
+	char buffer1[2048]="patata";
+	char buffer[2048];
+	int escrito= writeFile(patata, buffer1, 10);
+	printf("Numero de bytes escritos %d \n", escrito);
+	int nepe=closeFile(patata);
+	printf("Valor del close file: %d\n", nepe);
+	patata = openFile("/test.txt");
+	int leeido = readFile(patata, buffer, 6);
+	printf("Cadena leida: %s\n", buffer);
+	printf("Numero de bytes leidos %d\n", leeido);
+	nepe=closeFile(patata);
+	printf("Valor del close file: %d\n", nepe);
 	///////
 
 	ret = unmountFS();

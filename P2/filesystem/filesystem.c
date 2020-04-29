@@ -193,6 +193,8 @@ int openFile(char *fileName)
     }else{
         Inodos[fd].estado=1;
         Inodos[fd].posPuntero=0;
+        //printf("\n %s \n", SB1.inodos[fd].nombre);
+        //printf("\n %d \n", SB1.inodos[fd].size);
     }
     return fd;
 }
@@ -250,6 +252,7 @@ int readFile(int fileDescriptor, void *buffer, int numBytes)
             //se lee lo justo, sino se lee hasta el maximo posible
             if(Inodos[fileDescriptor].posPuntero + numBytes > SB1.inodos[fileDescriptor].size){
                 numBytes = SB1.inodos[fileDescriptor].size - Inodos[fileDescriptor].posPuntero;
+                printf("Que numbytes se quedo: %d\n", numBytes);
             }
             if(numBytes <= 0) return 0; //tronco, leiste de mas y se fue a la verga
 
@@ -301,10 +304,13 @@ int writeFile(int fileDescriptor, void *buffer, int numBytes)
             }
             b_id = bmap(fileDescriptor, Inodos[fileDescriptor].posPuntero);
             bread(DEVICE_IMAGE, b_id, buff);
-            memcpy(buffer, (void *) buff, numBytes);
+            //printf("%s",buff);
+            memcpy(buff, (void *) buffer, numBytes);
             bwrite(DEVICE_IMAGE, b_id,buff);
             Inodos[fileDescriptor].posPuntero+= numBytes;
+            //printf("De cuanto es el size: %d\n", SB1.inodos[fileDescriptor].size);
             SB1.inodos[fileDescriptor].size+= numBytes;
+            printf("De cuanto es el size: %d\n", SB1.inodos[fileDescriptor].size);
             return numBytes;
         }
         
@@ -319,7 +325,7 @@ int writeFile(int fileDescriptor, void *buffer, int numBytes)
             }
             b_id = bmap(fileDescriptor, Inodos[fileDescriptor].posPuntero);
             bread(DEVICE_IMAGE, b_id, buff);
-            memcpy(buffer, (void *) buff, numBytes);
+            memcpy(buff, (void *) buffer, numBytes);
             bwrite(DEVICE_IMAGE, b_id,buff);
             Inodos[fileDescriptor].posPuntero+= numBytes;
             SB1.inodos[fileDescriptor].size+= numBytes;

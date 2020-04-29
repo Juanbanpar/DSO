@@ -16,8 +16,8 @@
 #ifndef _USER_H_
 #define _USER_H_
 
-#include "filesystem/blocks_cache.h" // Headers for block managing (read/write)
-#include "filesystem/crc.h"
+#include "blocks_cache.h" // Headers for block managing (read/write)
+#include "crc.h"
 
 #define DEVICE_IMAGE "disk.dat" // Device name
 #define MAX_FILE_SIZE 10240      // Maximum file size, in bytes
