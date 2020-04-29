@@ -75,6 +75,14 @@ int main()
 	printf("Numero de bytes leidos %d\n", leeido);
 	nepe=closeFile(patata);
 	printf("Valor del close file: %d\n", nepe);
+    //nepe=removeFile("/test.txt");
+	//printf("Valor del remove file: %d\n", nepe);
+    nepe=includeIntegrity("/test.txt");
+    printf("Valor del Integrity file: %d\n", nepe);
+    nepe=checkFile("/test.txt");
+    printf("Valor del checkFile file: %d\n", nepe);
+    patata=openFileIntegrity("/test.txt");
+    printf("Valor del openFileIntegrity file: %d\n", patata);
 	///////
 
 	ret = unmountFS();

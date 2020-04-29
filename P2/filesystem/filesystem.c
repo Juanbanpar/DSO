@@ -149,7 +149,7 @@ int removeFile(char *fileName)
                 if(SB1.inodos[inode].bloque[j]!=0){
                     if (bwrite(DEVICE_IMAGE, SB1.inodos[inode].bloque[j], 0) == -1){
                         printf("Error bwrite\n");
-                        return -1;
+                        return -2;
                     }
                     SB1.inodos[inode].bloque[j] = 0;
                 }
@@ -161,7 +161,7 @@ int removeFile(char *fileName)
                 if(SB2.inodos[inode].bloque[j]!=0){
                     if (bwrite(DEVICE_IMAGE, SB2.inodos[inode].bloque[j], 0) == -1){
                         printf("Error bwrite\n");
-                        return -1;
+                        return -2;
                     }
                     SB2.inodos[inode].bloque[j] = 0;
                 }
@@ -383,7 +383,7 @@ int checkFile (char * fileName)
     
     if(inodo == -1){
         printf("File does not exist\n");
-        return -1;
+        return -2;
     }
     
     if(inodo < MAX_FILES/2) {
@@ -454,9 +454,21 @@ int includeIntegrity (char * fileName)
  */
 int openFileIntegrity(char *fileName)
 {
-    checkFile(fileName);
-    openFile(fileName);
-    return -2;
+    int check = checkFile(fileName);
+    if (check == -2) {
+        return -1;
+    } else if (check == -1) {
+        return -2;
+    } else {
+        int open = openFile(fileName);
+        if (open == -1) {
+            return -1;
+        } else if (open == -2) {
+            return -3;
+        } else {
+            return 0;
+        }
+    }
 }
 
 /*
