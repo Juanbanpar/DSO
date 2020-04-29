@@ -38,7 +38,8 @@ int mkFS(long deviceSize)
     //Inicializar los valores iniciales
     SB1.diskSize = deviceSize;
     for(int i=0; i<MAX_FILES; i++) SB1.mapaINodos[i] = 0; //Seguro que hay una forma mejor
-    SB1.mapaBloques = (char *) malloc((deviceSize/BLOCK_SIZE)-2); //Los bloques de datos son el número de bloques (tamaño de disco entre tamaño de bloque) menos los dos del superbloque
+    //SB1.mapaBloques = (char *) malloc((deviceSize/BLOCK_SIZE)-2); //Los bloques de datos son el número de bloques (tamaño de disco entre tamaño de bloque) menos los dos del superbloque
+
     for (int i = 0; i < 4; i++) SB1.mapaBloques[i] = 0;
     SB1.numMagico = 100383438;
     

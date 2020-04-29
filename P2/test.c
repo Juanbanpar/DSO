@@ -75,8 +75,15 @@ int main()
 	printf("Numero de bytes leidos %d\n", leeido);
 	nepe=closeFile(patata);
 	printf("Valor del close file: %d\n", nepe);
-    //nepe=removeFile("/test.txt");
-	//printf("Valor del remove file: %d\n", nepe);
+    
+    /*
+    nepe=removeFile("/test.txt");
+	printf("Valor del remove file: %d\n", nepe);
+    patata = openFile("/test.txt");
+    printf("Valor del open file: %d\n", patata);
+    */
+    
+    
     nepe=includeIntegrity("/test.txt");
     printf("Valor del Integrity file: %d\n", nepe);
     nepe=checkFile("/test.txt");
