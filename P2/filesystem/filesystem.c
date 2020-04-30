@@ -409,17 +409,19 @@ int checkFile (char * fileName)
     if(Inodos[inodo].estado!=1){
         openFile(fileName);
     }
+    int pos = Inodos[inodo].posPuntero;
+    Inodos[inodo].posPuntero=0;
     
     if(inodo < MAX_FILES/2) {
         unsigned char buffer[SB1.inodos[inodo].size];
         readFile(inodo, buffer, SB1.inodos[inodo].size);
-        printf("Cadena leida para el CRC: %s\n", buffer);
         uint32_t val = CRC32(buffer, SB1.inodos[inodo].size);
-        printf("CRC calculado: %d", val);
         
         if (SB1.inodos[inodo].crc == val) {
+            Inodos[inodo].posPuntero=pos;
             return 0;
         } else {
+            Inodos[inodo].posPuntero=pos;
             return -1;
         }
     } else {
@@ -429,8 +431,10 @@ int checkFile (char * fileName)
         uint32_t val = CRC32(buffer, SB2.inodos[inodo].size);
         
         if (SB2.inodos[inodo].crc == val) {
+            Inodos[inodo].posPuntero=pos;
             return 0;
         } else {
+            Inodos[inodo].posPuntero=pos;
             return -1;
         }
     }
@@ -456,15 +460,16 @@ int includeIntegrity (char * fileName)
     if(Inodos[inodo].estado!=1){
         openFile(fileName);
     }
+    int pos = Inodos[inodo].posPuntero;
+    Inodos[inodo].posPuntero=0;
     
     if(inodo < MAX_FILES/2) {
         unsigned char buffer[SB1.inodos[inodo].size];
         readFile(inodo, buffer, SB1.inodos[inodo].size);
-        printf("Cadena leida para el CRC: %s\n", buffer);
         uint32_t val = CRC32(buffer, SB1.inodos[inodo].size);
         SB1.inodos[inodo].crc = val;
-        printf("CRC calculado: %d", val);
         
+        Inodos[inodo].posPuntero=pos;
         return 0;
     } else {
         inodo /= 2;
@@ -473,6 +478,7 @@ int includeIntegrity (char * fileName)
         uint32_t val = CRC32(buffer, SB2.inodos[inodo].size);
         SB2.inodos[inodo].crc = val;
         
+        Inodos[inodo].posPuntero=pos;
         return 0;
     }
     
