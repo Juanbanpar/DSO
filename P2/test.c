@@ -81,14 +81,14 @@ int main()
     //nepe=removeFile("/test.txt");
 	//printf("Valor del remove file: %d\n", nepe);
 	
-    //patata = openFile("/test.txt");
-    //printf("Valor del open file: %d\n", patata);
+    patata = openFile("/test.txt");
+    printf("Valor del open file: %d\n", patata);
     
     nepe=includeIntegrity("/test.txt");
     printf("Valor del Integrity file: %d\n", nepe);
     nepe=checkFile("/test.txt");
     printf("Valor del checkFile file: %d\n", nepe);
-    nepe=closeFileIntegrity(patata);
+    nepe=closeFile(patata);
 	printf("Valor del close file: %d\n", nepe);
     patata=openFileIntegrity("/test.txt");
     printf("Valor del openFileIntegrity file: %d\n", patata);

@@ -50,10 +50,12 @@ int mkFS(long deviceSize)
             SB1.inodos[i].bloque[j] = 0;
             SB2.inodos[i].bloque[j] = 0;
         }
+        SB1.inodos[i].tipo = 0;
+        SB2.inodos[i].tipo = 0;
         SB1.inodos[i].size = 0;
         SB2.inodos[i].size = 0;
-        //SB1.inodos[i].crc = NULL;
-        //SB2.inodos[i].crc = NULL;
+        SB1.inodos[i].crc = 0;
+        SB2.inodos[i].crc = 0;
     }
     
     if (unmountFS() == -1){
@@ -72,6 +74,11 @@ int mountFS(void)
 {
     if (bread(DEVICE_IMAGE, 0, ((char *)&(SB1))) == -1 || bread(DEVICE_IMAGE, 1, ((char *)&(SB2))) == -1){
         printf("Error bread\n");
+        return -1;
+    }
+    
+    if(SB1.numMagico != 100383438) {
+        printf("Este FS no es PotooooooooFS");
         return -1;
     }
 
@@ -407,7 +414,7 @@ int checkFile (char * fileName)
     }
 
     if(Inodos[inodo].estado!=1){
-        openFile(fileName);
+        return -2;
     }
     int pos = Inodos[inodo].posPuntero;
     Inodos[inodo].posPuntero=0;
@@ -458,7 +465,7 @@ int includeIntegrity (char * fileName)
     }
     
     if(Inodos[inodo].estado!=1){
-        openFile(fileName);
+        return -2;
     }
     int pos = Inodos[inodo].posPuntero;
     Inodos[inodo].posPuntero=0;
@@ -490,21 +497,44 @@ int includeIntegrity (char * fileName)
  * @return	The file descriptor if possible, -1 if file does not exist, -2 if the file is corrupted, -3 in case of error
  */
 int openFileIntegrity(char *fileName)
-{
-    int check = checkFile(fileName);
-    if (check == -2) {
+{    
+    int open = openFile(fileName);
+    if (open == -1) {
         return -1;
-    } else if (check == -1) {
-        return -2;
+    } else if (open == -2) {
+        return -3;
     } else {
-        int open = openFile(fileName);
-        printf("%d", open);
-        if (open == -1) {
-            return -1;
-        } else if (open == -2) {
-            return -3;
+        if (open < MAX_FILES/2) {
+            if (SB1.inodos[open].crc == 0) {
+                printf("This file doesn't have a CRC");
+                closeFile(open);
+                return -3;
+            } else {
+                int check = checkFile(fileName);
+                if (check == -2) {
+                    return -1;
+                } else if (check == -1) {
+                    return -2;
+                } else {
+                    return 0;
+                }
+            }
         } else {
-            return 0;
+            open /= 2;
+            if (SB2.inodos[open].crc == 0) {
+                printf("This file doesn't have a CRC");
+                closeFile(open);
+                return -3;
+            } else {
+                int check = checkFile(fileName);
+                if (check == -2) {
+                    return -1;
+                } else if (check == -1) {
+                    return -2;
+                } else {
+                    return 0;
+                }
+            }
         }
     }
 }
