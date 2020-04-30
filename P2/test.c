@@ -22,7 +22,7 @@
 #define ANSI_COLOR_GREEN "\x1b[32m"
 #define ANSI_COLOR_BLUE "\x1b[34m"
 
-#define N_BLOCKS 250					  // Number of blocks in the device
+#define N_BLOCKS 300					  // Number of blocks in the device
 #define DEV_SIZE N_BLOCKS *BLOCK_SIZE // Device size, in bytes
 
 int main()
@@ -94,6 +94,22 @@ int main()
     printf("Valor del openFileIntegrity file: %d\n", patata);
     nepe=closeFileIntegrity(patata);
 	printf("Valor del close file: %d\n", nepe);
+
+	char buffer3[2048] = "";
+	patata=createLn("/test.txt", "/link");
+    printf("Valor del createLn: %d\n", patata);
+	patata=openFile("/link");
+    printf("Valor del openLn: %d\n", patata);
+	nepe=readFile(patata , buffer3, 6);
+    printf("Valor del readLn: %d\n", nepe);
+	printf("Cadena leida: %s\n", buffer3);
+	strcpy(buffer3, " holi");
+	nepe=writeFile(patata, buffer3, 5);
+    printf("Valor del writeLn: %d\n", nepe);
+	nepe=closeFile(patata);
+    printf("Valor del closeLn: %d\n", nepe);
+	nepe=removeLn("/link");
+    printf("Valor del removeLn: %d\n", nepe);
 	///////
 
 	ret = unmountFS();

@@ -48,4 +48,5 @@ $(LIBFS_NAME): $(LIBFS_OBJS)
 clean:
 	rm -f $(LIBFS_NAME) $(LIBFS_OBJS) test create_disk create_disk.o
 	rm -fr ./create_disk.dSYM ./test.dSYM
+	rm -rf disk.dat
 

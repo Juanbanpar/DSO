@@ -232,8 +232,14 @@ int openFile(char *fileName)
     if(SB1.inodos[fd].tipo == 1 || SB2.inodos[fd/2].tipo == 1){
         if(fd < MAX_FILES/2){
             fd = bi(SB1.inodos[fd].bloque[0]);
+            if(Inodos[fd].estado==1){
+                return -2; //Ya esta abierto, cuidadito
+            }
         }else{
             fd = bi(SB2.inodos[fd/2].bloque[0]);
+            if(Inodos[fd].estado==1){
+                return -2; //Ya esta abierto, cuidadito
+            }
         }
     }
 
@@ -241,7 +247,7 @@ int openFile(char *fileName)
     Inodos[fd].estado=1;
     Inodos[fd].posPuntero=0;
     Inodos[fd].integridad=0;
-    
+
     return fd;
 }
 
@@ -771,8 +777,7 @@ int removeLn(char *linkName)
         strcpy(SB2.inodos[inodo].nombre, "");  
         SB2.inodos[inodo].bloque[0] = 0;      
         return 0;
-    }
-    
+    }    
     return -2;
 }
 
