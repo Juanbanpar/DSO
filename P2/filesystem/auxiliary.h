@@ -11,3 +11,5 @@
  */
 
 int bmap(int i, int pos);
+int namei(char *file_name);
+int bi(int block);
