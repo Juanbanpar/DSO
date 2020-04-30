@@ -92,6 +92,8 @@ int main()
 	printf("Valor del close file: %d\n", nepe);
     patata=openFileIntegrity("/test.txt");
     printf("Valor del openFileIntegrity file: %d\n", patata);
+    nepe=closeFileIntegrity(patata);
+	printf("Valor del close file: %d\n", nepe);
 	///////
 
 	ret = unmountFS();

@@ -245,7 +245,6 @@ int closeFile(int fileDescriptor)
 
     Inodos[fileDescriptor].estado=0;
     Inodos[fileDescriptor].posPuntero=0;
-    Inodos[fileDescriptor].integridad=0;
 
 	return 0;
 }
@@ -554,12 +553,38 @@ int openFileIntegrity(char *fileName)
  */
 int closeFileIntegrity(int fileDescriptor)
 {
+    /*
     if(fileDescriptor > 0 && fileDescriptor < MAX_FILES){
         if(fileDescriptor < MAX_FILES/2) includeIntegrity(SB1.inodos[fileDescriptor].nombre);
         else includeIntegrity(SB2.inodos[fileDescriptor/2].nombre);
 
         closeFile(fileDescriptor);
         return 0;
+    }*/
+    if(fileDescriptor < 0 || fileDescriptor > MAX_FILES){
+        return -1; //el fichero no existe
+    }
+    
+    if (Inodos[fileDescriptor].integridad == 0) {
+        printf("NF12: You can't close a file opened using openFile using closeFileIntegrity");
+        return -1;
+    }
+
+    if(fileDescriptor < MAX_FILES/2) {
+        if(includeIntegrity(SB1.inodos[fileDescriptor].nombre) == 0){
+            Inodos[fileDescriptor].estado=0;
+            Inodos[fileDescriptor].posPuntero=0;
+
+            return 0;
+        }
+    } else {
+        fileDescriptor /= 2;
+        if(includeIntegrity(SB2.inodos[fileDescriptor].nombre) == 0){
+            Inodos[fileDescriptor].estado=0;
+            Inodos[fileDescriptor].posPuntero=0;
+
+            return 0;
+        }
     }
 
     return -1;
