@@ -79,8 +79,8 @@ int main()
 	printf("Valor del close file: %d\n", nepe);
     
     
-    nepe=removeFile("/test.txt");
-	printf("Valor del remove file: %d\n", nepe);
+    //nepe=removeFile("/test.txt");
+	//printf("Valor del remove file: %d\n", nepe);
 	
     //patata = openFile("/test.txt");
     //printf("Valor del open file: %d\n", patata);

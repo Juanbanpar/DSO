@@ -405,11 +405,17 @@ int checkFile (char * fileName)
         printf("File does not exist\n");
         return -2;
     }
+
+    if(Inodos[inodo].estado!=1){
+        openFile(fileName);
+    }
     
     if(inodo < MAX_FILES/2) {
         unsigned char buffer[SB1.inodos[inodo].size];
         readFile(inodo, buffer, SB1.inodos[inodo].size);
+        printf("Cadena leida para el CRC: %s\n", buffer);
         uint32_t val = CRC32(buffer, SB1.inodos[inodo].size);
+        printf("CRC calculado: %d", val);
         
         if (SB1.inodos[inodo].crc == val) {
             return 0;
@@ -421,7 +427,6 @@ int checkFile (char * fileName)
         unsigned char buffer[SB2.inodos[inodo].size];
         readFile(inodo, buffer, SB2.inodos[inodo].size);
         uint32_t val = CRC32(buffer, SB2.inodos[inodo].size);
-        SB2.inodos[inodo].crc = val;
         
         if (SB2.inodos[inodo].crc == val) {
             return 0;
@@ -448,11 +453,17 @@ int includeIntegrity (char * fileName)
         return -1;
     }
     
+    if(Inodos[inodo].estado!=1){
+        openFile(fileName);
+    }
+    
     if(inodo < MAX_FILES/2) {
         unsigned char buffer[SB1.inodos[inodo].size];
         readFile(inodo, buffer, SB1.inodos[inodo].size);
+        printf("Cadena leida para el CRC: %s\n", buffer);
         uint32_t val = CRC32(buffer, SB1.inodos[inodo].size);
         SB1.inodos[inodo].crc = val;
+        printf("CRC calculado: %d", val);
         
         return 0;
     } else {
