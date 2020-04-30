@@ -278,7 +278,7 @@ int readFile(int fileDescriptor, void *buffer, int numBytes)
 
             b_id = bmap(fileDescriptor, Inodos[fileDescriptor].posPuntero);
             bread(DEVICE_IMAGE, b_id, buff);
-            memcpy(buffer, (void *) buff, numBytes);
+            memmove(buffer, (void *) buff, numBytes);
             Inodos[fileDescriptor].posPuntero+= numBytes;
             return numBytes;
         }
@@ -294,7 +294,7 @@ int readFile(int fileDescriptor, void *buffer, int numBytes)
             }
             b_id = bmap(fileDescriptor, Inodos[fileDescriptor].posPuntero);
             bread(DEVICE_IMAGE, b_id, buff);
-            memcpy(buffer, (void *) buff, numBytes);
+            memmove(buffer, (void *) buff, numBytes);
             Inodos[fileDescriptor].posPuntero+= numBytes;
             return numBytes;
         }
@@ -325,7 +325,7 @@ int writeFile(int fileDescriptor, void *buffer, int numBytes)
             b_id = bmap(fileDescriptor, Inodos[fileDescriptor].posPuntero);
             bread(DEVICE_IMAGE, b_id, buff);
             //printf("%s",buff);
-            memcpy(buff, (void *) buffer, numBytes);
+            memmove(buff, (void *) buffer, numBytes);
             bwrite(DEVICE_IMAGE, b_id,buff);
             Inodos[fileDescriptor].posPuntero+= numBytes;
             //printf("De cuanto es el size: %d\n", SB1.inodos[fileDescriptor].size);
@@ -345,7 +345,7 @@ int writeFile(int fileDescriptor, void *buffer, int numBytes)
             }
             b_id = bmap(fileDescriptor, Inodos[fileDescriptor].posPuntero);
             bread(DEVICE_IMAGE, b_id, buff);
-            memcpy(buff, (void *) buffer, numBytes);
+            memmove(buff, (void *) buffer, numBytes);
             bwrite(DEVICE_IMAGE, b_id,buff);
             Inodos[fileDescriptor].posPuntero+= numBytes;
             SB1.inodos[fileDescriptor].size+= numBytes;
@@ -498,6 +498,7 @@ int openFileIntegrity(char *fileName)
         return -2;
     } else {
         int open = openFile(fileName);
+        printf("%d", open);
         if (open == -1) {
             return -1;
         } else if (open == -2) {

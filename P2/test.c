@@ -88,6 +88,8 @@ int main()
     printf("Valor del Integrity file: %d\n", nepe);
     nepe=checkFile("/test.txt");
     printf("Valor del checkFile file: %d\n", nepe);
+    nepe=closeFileIntegrity(patata);
+	printf("Valor del close file: %d\n", nepe);
     patata=openFileIntegrity("/test.txt");
     printf("Valor del openFileIntegrity file: %d\n", patata);
 	///////
