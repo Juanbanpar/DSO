@@ -39,13 +39,14 @@ typedef struct INodo {
 typedef struct INodoX {
     uint32_t posPuntero;    //Puntero, mirar requisitos.
     uint8_t estado;         //Estado del archivo
+    uint8_t integridad;     //Para comprobar si se abrió con o sin integridad
 } INodoX;
 
 typedef struct Superbloque1 {
     uint32_t numMagico;                 //Número mágico que indentifica nuestro sistema de ficheros
     uint64_t diskSize;                  //El tamaño del disco
     char mapaINodos[MAX_FILES];         //Mapa de inodos
-    char mapaBloques[300];              //Mapa de bloques, se necesitan 4
+    char mapaBloques[300];              //Mapa de bloques
     struct INodo inodos[MAX_FILES / 2]; //Array de inodos
     char relleno[704];
 } Superbloque1;

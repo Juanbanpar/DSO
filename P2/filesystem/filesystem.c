@@ -220,6 +220,7 @@ int openFile(char *fileName)
     }else{
         Inodos[fd].estado=1;
         Inodos[fd].posPuntero=0;
+        Inodos[fd].integridad=0;
         //printf("\n %s \n", SB1.inodos[fd].nombre);
         //printf("\n %d \n", SB1.inodos[fd].size);
     }
@@ -236,9 +237,15 @@ int closeFile(int fileDescriptor)
     if(fileDescriptor < 0 || fileDescriptor > MAX_FILES){
         return -1; //el fichero no existe
     }
+    
+    if (Inodos[fileDescriptor].integridad == 1) {
+        printf("NF11: You can't close a file opened using openFileIntegrity using closeFile");
+        return -1;
+    }
 
     Inodos[fileDescriptor].estado=0;
     Inodos[fileDescriptor].posPuntero=0;
+    Inodos[fileDescriptor].integridad=0;
 
 	return 0;
 }
@@ -506,7 +513,7 @@ int openFileIntegrity(char *fileName)
     } else {
         if (open < MAX_FILES/2) {
             if (SB1.inodos[open].crc == 0) {
-                printf("This file doesn't have a CRC");
+                printf("NF10: This file doesn't have a CRC");
                 closeFile(open);
                 return -3;
             } else {
@@ -516,14 +523,15 @@ int openFileIntegrity(char *fileName)
                 } else if (check == -1) {
                     return -2;
                 } else {
+                    Inodos[open].integridad=1;  //NF12
                     return 0;
                 }
             }
         } else {
-            open /= 2;
-            if (SB2.inodos[open].crc == 0) {
-                printf("This file doesn't have a CRC");
-                closeFile(open);
+            int fd = open / 2;
+            if (SB2.inodos[fd].crc == 0) {
+                printf("NF10: This file doesn't have a CRC");
+                closeFile(fd);
                 return -3;
             } else {
                 int check = checkFile(fileName);
@@ -532,6 +540,7 @@ int openFileIntegrity(char *fileName)
                 } else if (check == -1) {
                     return -2;
                 } else {
+                    Inodos[open].integridad=1;  //NF12
                     return 0;
                 }
             }
