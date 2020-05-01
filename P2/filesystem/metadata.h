@@ -30,7 +30,7 @@ struct Superbloque2;
 
 typedef struct INodo {
     char nombre[MAX_NAME_LENGHT + 1];   //Nombre del fichero
-    uint8_t bloque[5];                  //Bloques en los que está presente
+    uint16_t bloque[5];                 //Bloques en los que está presente
     uint8_t tipo;                       //1 si es enlace
     uint16_t size;                      //Tamaño del fichero en bytes
     uint32_t crc;                       //CRC32
@@ -48,10 +48,10 @@ typedef struct Superbloque1 {
     char mapaINodos[MAX_FILES];         //Mapa de inodos
     char mapaBloques[300];              //Mapa de bloques
     struct INodo inodos[MAX_FILES / 2]; //Array de inodos
-    char relleno[704];
+    char relleno[488];
 } Superbloque1;
 
 typedef struct Superbloque2 {
     struct INodo inodos[MAX_FILES / 2]; //Array de inodos
-    char relleno[968];
+    char relleno[848];
 } Superbloque2;
