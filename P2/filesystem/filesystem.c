@@ -185,7 +185,8 @@ int removeFile(char *fileName)
                 
                 //SB1.inodos[inode].crc = NULL;
             }else{
-                inode /= 2;
+                //inode /= 2;
+                inode -= 24;
                 strcpy(SB2.inodos[inode].nombre, "");
                 if(SB2.inodos[inode].bloque[j]!=0){
                     if (bwrite(DEVICE_IMAGE, SB2.inodos[inode].bloque[j], bloque) == -1){
@@ -229,14 +230,16 @@ int openFile(char *fileName)
     Inodos[fd].integridad=0;
 
     //Si es un blando hacemos la traduccion
-    if(SB1.inodos[fd].tipo == 1 || SB2.inodos[fd/2].tipo == 1){
+    //if(SB1.inodos[fd].tipo == 1 || SB2.inodos[fd/2].tipo == 1){
+    if(SB1.inodos[fd].tipo == 1 || SB2.inodos[fd-24].tipo == 1){
         if(fd < MAX_FILES/2){
             fd = bi(SB1.inodos[fd].bloque[0]);
             if(Inodos[fd].estado==1){
                 return -2; //Ya esta abierto, cuidadito
             }
         }else{
-            fd = bi(SB2.inodos[fd/2].bloque[0]);
+            //fd = bi(SB2.inodos[fd/2].bloque[0]);
+            fd = bi(SB2.inodos[fd-24].bloque[0]);
             if(Inodos[fd].estado==1){
                 return -2; //Ya esta abierto, cuidadito
             }
@@ -324,7 +327,8 @@ int bmap(int i, int pos){
             }
         }
     }else{
-        i /= 2;
+        //i /= 2;
+        i -= 24;
         if(pos <= BLOCK_SIZE) bloquepuntero = SB2.inodos[i].bloque[0];
         else if(pos <= BLOCK_SIZE*2){
             if((bloquepuntero = SB2.inodos[i].bloque[1])==0){
@@ -544,7 +548,8 @@ int checkFile (char * fileName)
             return -1;
         }
     } else {
-        inodo /= 2;
+        //inodo /= 2;
+        inodo -= 24;
         unsigned char buffer[SB2.inodos[inodo].size];
         readFile(inodo, buffer, SB2.inodos[inodo].size);
         uint32_t val = CRC32(buffer, SB2.inodos[inodo].size);
@@ -591,7 +596,8 @@ int includeIntegrity (char * fileName)
         Inodos[inodo].posPuntero=pos;
         return 0;
     } else {
-        inodo /= 2;
+        //inodo /= 2;
+        inodo -= 24;
         unsigned char buffer[SB2.inodos[inodo].size];
         readFile(inodo, buffer, SB2.inodos[inodo].size);
         uint32_t val = CRC32(buffer, SB2.inodos[inodo].size);
@@ -633,7 +639,8 @@ int openFileIntegrity(char *fileName)
                 }
             }
         } else {
-            int fd = open / 2;
+            //int fd = open / 2;
+            int fd = open - 24;
             if (SB2.inodos[fd].crc == 0) {
                 printf("NF10: This file doesn't have a CRC");
                 closeFile(fd);
@@ -684,7 +691,8 @@ int closeFileIntegrity(int fileDescriptor)
             return 0;
         }
     } else {
-        fileDescriptor /= 2;
+        //fileDescriptor /= 2;
+        fileDescriptor -= 24;
         if(includeIntegrity(SB2.inodos[fileDescriptor].nombre) == 0){
             Inodos[fileDescriptor].estado=0;
             Inodos[fileDescriptor].posPuntero=0;
@@ -728,19 +736,22 @@ int createLn(char *fileName, char *linkName)
             strcpy(SB1.inodos[i].nombre, linkName);
             if(inodo<MAX_FILES/2) SB1.inodos[i].bloque[0] = SB1.inodos[inodo].bloque[0];
             else{
-                inodo /= 2;
+                //inodo /= 2;
+                inodo -= 24;
                 SB1.inodos[i].bloque[0] = SB2.inodos[inodo].bloque[0];
             }
             return 0;
         }else{
-            i /= 2;
+            //i /= 2;
+            i -= 24;
 
             SB2.inodos[i].size=0;
             SB2.inodos[i].tipo=1;   //Es simbolico
             strcpy(SB2.inodos[i].nombre, linkName);
             if(inodo<MAX_FILES/2) SB2.inodos[i].bloque[0] = SB1.inodos[inodo].bloque[0];
             else{
-                inodo /= 2;
+                //inodo /= 2;
+                inodo -= 24;
                 SB2.inodos[i].bloque[0] = SB2.inodos[inodo].bloque[0];
             }
             return 0;
@@ -773,7 +784,8 @@ int removeLn(char *linkName)
         SB1.inodos[inodo].bloque[0] = 0;      
         return 0;
     } else {
-        inodo /= 2;
+        //inodo /= 2;
+        inodo -= 24;
         strcpy(SB2.inodos[inodo].nombre, "");  
         SB2.inodos[inodo].bloque[0] = 0;      
         return 0;
