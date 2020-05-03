@@ -232,7 +232,6 @@ int openFile(char *fileName)
         return -2; //Ya esta abierto, cuidadito
     }
 
-    Inodos[fd].estado=1;
     Inodos[fd].posPuntero=0;
     Inodos[fd].integridad=0;
 

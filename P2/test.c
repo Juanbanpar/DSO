@@ -60,7 +60,7 @@ int main()
 
 	ret = unmountFS();
 	ret = mountFS();
-	
+	int nepe=0;
 	int patata = openFile("/test.txt");
 	//int namelo=namei("/test.txt");
 	//printf("%d", namelo);
@@ -69,9 +69,11 @@ int main()
 	char buffer[2048];
 	int escrito= writeFile(patata, buffer1, 10);
 	printf("Numero de bytes escritos %d \n", escrito);
-	int nepe=closeFile(patata);
-	printf("Valor del close file: %d\n", nepe);
-	patata = openFile("/test.txt");
+	//int nepe=closeFile(patata);
+	//printf("Valor del close file: %d\n", nepe);
+	int patat2 = lseekFile(patata, 0,FS_SEEK_BEGIN);
+	printf("Valor del lseek: %d\n", patat2);
+	//patata = openFile("/test.txt");
 	int leeido = readFile(patata, buffer, 6);
 	printf("Cadena leida: %s\n", buffer);
 	printf("Numero de bytes leidos %d\n", leeido);
