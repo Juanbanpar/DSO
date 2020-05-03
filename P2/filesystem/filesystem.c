@@ -112,6 +112,7 @@ int unmountFS(void)
  */
 int createFile(char *fileName)
 {
+    if(strlen(fileName)>MAX_FILE_SIZE) return -2;
     if(namei(fileName)!=-1){
         printf("File already exists\n");
         return -1;
@@ -161,9 +162,8 @@ int createFile(char *fileName)
 int removeFile(char *fileName)
 {
     char bloque[2048];
-    //char gitano[33];
-    memset(bloque, '0', BLOCK_SIZE);
-    //memset(gitano, '0', strlen(fileName));
+    memset(bloque, '\0', BLOCK_SIZE);
+
     int inode;
     if((inode = namei(fileName))==-1){
         printf("File does not exist\n");
@@ -172,16 +172,14 @@ int removeFile(char *fileName)
         //Liberamos el inodo
         bitmap_setbit(SB1.mapaINodos, inode, 0);
 
-        printf("nombre pre strcpy %s\n", SB1.inodos[inode].nombre);
+        printf("nombre pre strcpy %ld\n", strlen(SB1.inodos[inode].nombre));
         //Borramos el contenido del fichero y el inodo
         for (int j = 0; j < 5; j++)
         {
             if(inode<MAX_FILES/2){
-                strcpy(SB1.inodos[inode].nombre, "");
-                //bwrite(DEVICE_IMAGE, 0, ((char *)&(SB1)));
-                //printf("nombre post strcpy %s", SB1.inodos[inode].nombre);
+                strcpy(SB1.inodos[inode].nombre, "\0");
+                printf("nombre post strcpy %ld\n", strlen(SB1.inodos[inode].nombre));
                 if(SB1.inodos[inode].bloque[j]!=0){
-                    printf("que puto bloque es: %d\n", SB1.inodos[inode].bloque[j]);
                     if (bwrite(DEVICE_IMAGE, SB1.inodos[inode].bloque[j], bloque) == -1){
                         printf("Error bwrite\n");
                         return -2;
@@ -189,12 +187,9 @@ int removeFile(char *fileName)
                     SB1.inodos[inode].bloque[j] = 0;
                 }
                 SB1.inodos[inode].size = 0;
-                
-                //SB1.inodos[inode].crc = NULL;
             }else{
-                //inode /= 2;
-                inode -= 24;
-                strcpy(SB2.inodos[inode].nombre, "");
+                inode -= MAX_FILES/2;
+                strcpy(SB2.inodos[inode].nombre, "\0");
                 if(SB2.inodos[inode].bloque[j]!=0){
                     if (bwrite(DEVICE_IMAGE, SB2.inodos[inode].bloque[j], bloque) == -1){
                         printf("Error bwrite\n");
@@ -205,10 +200,6 @@ int removeFile(char *fileName)
                 SB2.inodos[inode].size = 0;
             }
         }
-        /*if (bwrite(DEVICE_IMAGE, 0, ((char *)&(SB1))) == -1 || bwrite(DEVICE_IMAGE, 1, ((char *)&(SB2))) == -1){
-            printf("Error bwrite\n");
-            return -1;
-        }*/
         return 0;
     }
 	return -2;
