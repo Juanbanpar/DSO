@@ -1,5 +1,5 @@
 *.o
 *.a
 create_disk
-filesystem
-data.dat
+test
+disk.dat
