@@ -33,37 +33,34 @@ int mkFS(long deviceSize)
 		return -1;
 	}
 
-    printf("%d", sizeof(SB1));
-    Superbloque1* SB1 = malloc(sizeof(Superbloque1));
-    printf("%d", sizeof(SB1));
-    SB1->mapaBloques = malloc((deviceSize/BLOCK_SIZE-2)/8);
-    printf("%d", sizeof(SB1));
-    SB1->relleno = malloc(BLOCK_SIZE-sizeof(Superbloque1)+1);
-    printf("%d", sizeof(SB1));
+    // SB1 = malloc(BLOCK_SIZE);
+    // printf("%ld\n", sizeof(SB1.mapaBloques));
+    // SB1.mapaBloques = realloc(SB1.mapaBloques, (deviceSize/BLOCK_SIZE-2)/8);
+    // printf("%ld\n", sizeof(SB1.mapaBloques));
+    // SB1.relleno = realloc(SB1.relleno, (BLOCK_SIZE-sizeof(Superbloque1))+1);
+    // printf("%ld\n", sizeof(SB1));
 
     //Inicializar los valores iniciales
-    SB1->diskSize = deviceSize;
-    for(int i=0; i<MAX_FILES; i++) SB1->mapaINodos[i] = 0; //Seguro que hay una forma mejor
-    //SB1->mapaBloques = (char *) malloc((deviceSize/BLOCK_SIZE)-2); //Los bloques de datos son el número de bloques (tamaño de disco entre tamaño de bloque) menos los dos del superbloque
-
-    for (int i = 0; i < 300; i++) SB1->mapaBloques[i] = 0;
-    SB1->numMagico = 100383438;
+    SB1.diskSize = deviceSize;
+    for(int i=0; i<MAX_FILES; i++) bitmap_setbit(SB1.mapaINodos, i, 0);
+    for (int i=2; i < deviceSize/BLOCK_SIZE; i++) bitmap_setbit(SB1.mapaBloques, i, 0);
+    SB1.numMagico = 100383438;
     
     for(int i = 0; i < MAX_FILES/2; i++) {
-        memset(SB1->inodos[i].nombre, '\0', MAX_NAME_LENGHT+1);
+        memset(SB1.inodos[i].nombre, '\0', MAX_NAME_LENGHT+1);
         memset(SB2.inodos[i].nombre, '\0', MAX_NAME_LENGHT+1);
         for(int j = 0; j < 5; j++){
-            SB1->inodos[i].bloque[j] = 0;
+            SB1.inodos[i].bloque[j] = 0;
             SB2.inodos[i].bloque[j] = 0;
         }
-        SB1->inodos[i].tipo = 0;
+        SB1.inodos[i].tipo = 0;
         SB2.inodos[i].tipo = 0;
-        SB1->inodos[i].size = 0;
+        SB1.inodos[i].size = 0;
         SB2.inodos[i].size = 0;
-        SB1->inodos[i].crc = 0;
+        SB1.inodos[i].crc = 0;
         SB2.inodos[i].crc = 0;
-        bitmap_setbit(SB1->mapaBloques, 0, 1);
-        bitmap_setbit(SB1->mapaBloques, 1, 1);
+        bitmap_setbit(SB1.mapaBloques, 0, 1);
+        bitmap_setbit(SB1.mapaBloques, 1, 1);
     }
     
     if (unmountFS() == -1){
@@ -191,6 +188,7 @@ int removeFile(char *fileName)
                         printf("Error bwrite\n");
                         return -2;
                     }
+                    bitmap_setbit(SB1.mapaBloques, SB1.inodos[inode].bloque[j], 0);
                     SB1.inodos[inode].bloque[j] = 0;
                 }
                 SB1.inodos[inode].size = 0;
@@ -203,6 +201,7 @@ int removeFile(char *fileName)
                         printf("Error bwrite\n");
                         return -2;
                     }
+                    bitmap_setbit(SB1.mapaBloques, SB2.inodos[inode].bloque[j], 0);
                     SB2.inodos[inode].bloque[j] = 0;
                 }
                 SB2.inodos[inode].size = 0;
@@ -659,11 +658,13 @@ int removeLn(char *linkName)
     //Borramos la informacion del inodo
     if(inodo < MAX_FILES/2) {
         memset(SB1.inodos[inodo].nombre, '\0', MAX_NAME_LENGHT+1);
+        bitmap_setbit(SB1.mapaBloques, SB2.inodos[inodo].bloque[0], 0);
         SB1.inodos[inodo].bloque[0] = 0;      
         return 0;
     } else {
         inodo -= MAX_FILES/2;
         memset(SB2.inodos[inodo].nombre, '\0', MAX_NAME_LENGHT+1);
+        bitmap_setbit(SB1.mapaBloques, SB2.inodos[inodo].bloque[0], 0);
         SB2.inodos[inodo].bloque[0] = 0;      
         return 0;
     }    

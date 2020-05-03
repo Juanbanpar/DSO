@@ -22,8 +22,8 @@
 #define ANSI_COLOR_GREEN "\x1b[32m"
 #define ANSI_COLOR_BLUE "\x1b[34m"
 
-#define N_BLOCKS 300					  // Number of blocks in the device
-#define DEV_SIZE N_BLOCKS *BLOCK_SIZE // Device size, in bytes
+#define N_BLOCKS 48 * 5		  // Number of blocks in the device
+#define DEV_SIZE N_BLOCKS * BLOCK_SIZE // Device size, in bytes
 
 int main()
 {
@@ -62,8 +62,6 @@ int main()
 	ret = mountFS();
 	int nepe=0;
 	int patata = openFile("/test.txt");
-	//int namelo=namei("/test.txt");
-	//printf("%d", namelo);
 	printf("Descriptor del fichero %d\n", patata);
 	char buffer1[2048]="patata";
 	char buffer[2048];
@@ -93,7 +91,7 @@ int main()
     nepe=closeFile(patata);
 	printf("Valor del close file: %d\n", nepe);
 	nepe=removeFile("/test.txt");
-	printf("Valor del remove file: %d\n", nepe);
+	// printf("Valor del remove file: %d\n", nepe);
 	// ret = unmountFS();
     // patata=openFileIntegrity("/test.txt");
     // printf("Valor del openFileIntegrity file: %d\n", patata);
