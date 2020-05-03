@@ -45,10 +45,12 @@ typedef struct INodoX {
 typedef struct Superbloque1 {
     uint32_t numMagico;                 //Número mágico que indentifica nuestro sistema de ficheros
     uint64_t diskSize;                  //El tamaño del disco
-    char mapaINodos[MAX_FILES];         //Mapa de inodos
-    char mapaBloques[300];              //Mapa de bloques
+    char mapaINodos[MAX_FILES/8];       //Mapa de inodos
+    char* mapaBloques;  //Mapa de bloques
+    // char mapaBloques[(MAX_FILES*5)/8];  //Mapa de bloques
     struct INodo inodos[MAX_FILES / 2]; //Array de inodos
-    char relleno[488];
+    char* relleno;
+    // char relleno[771];
 } Superbloque1;
 
 typedef struct Superbloque2 {

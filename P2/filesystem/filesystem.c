@@ -33,29 +33,37 @@ int mkFS(long deviceSize)
 		return -1;
 	}
 
-    //Inicializar los valores iniciales
-    SB1.diskSize = deviceSize;
-    for(int i=0; i<MAX_FILES; i++) SB1.mapaINodos[i] = 0; //Seguro que hay una forma mejor
-    //SB1.mapaBloques = (char *) malloc((deviceSize/BLOCK_SIZE)-2); //Los bloques de datos son el número de bloques (tamaño de disco entre tamaño de bloque) menos los dos del superbloque
+    printf("%d", sizeof(SB1));
+    Superbloque1* SB1 = malloc(sizeof(Superbloque1));
+    printf("%d", sizeof(SB1));
+    SB1->mapaBloques = malloc((deviceSize/BLOCK_SIZE-2)/8);
+    printf("%d", sizeof(SB1));
+    SB1->relleno = malloc(BLOCK_SIZE-sizeof(Superbloque1)+1);
+    printf("%d", sizeof(SB1));
 
-    for (int i = 0; i < 300; i++) SB1.mapaBloques[i] = 0;
-    SB1.numMagico = 100383438;
+    //Inicializar los valores iniciales
+    SB1->diskSize = deviceSize;
+    for(int i=0; i<MAX_FILES; i++) SB1->mapaINodos[i] = 0; //Seguro que hay una forma mejor
+    //SB1->mapaBloques = (char *) malloc((deviceSize/BLOCK_SIZE)-2); //Los bloques de datos son el número de bloques (tamaño de disco entre tamaño de bloque) menos los dos del superbloque
+
+    for (int i = 0; i < 300; i++) SB1->mapaBloques[i] = 0;
+    SB1->numMagico = 100383438;
     
     for(int i = 0; i < MAX_FILES/2; i++) {
-        strcpy(SB1.inodos[i].nombre, "");
-        strcpy(SB2.inodos[i].nombre, "");
+        memset(SB1->inodos[i].nombre, '\0', MAX_NAME_LENGHT+1);
+        memset(SB2.inodos[i].nombre, '\0', MAX_NAME_LENGHT+1);
         for(int j = 0; j < 5; j++){
-            SB1.inodos[i].bloque[j] = 0;
+            SB1->inodos[i].bloque[j] = 0;
             SB2.inodos[i].bloque[j] = 0;
         }
-        SB1.inodos[i].tipo = 0;
+        SB1->inodos[i].tipo = 0;
         SB2.inodos[i].tipo = 0;
-        SB1.inodos[i].size = 0;
+        SB1->inodos[i].size = 0;
         SB2.inodos[i].size = 0;
-        SB1.inodos[i].crc = 0;
+        SB1->inodos[i].crc = 0;
         SB2.inodos[i].crc = 0;
-        bitmap_setbit(SB1.mapaBloques, 0, 1);
-        bitmap_setbit(SB1.mapaBloques, 1, 1);
+        bitmap_setbit(SB1->mapaBloques, 0, 1);
+        bitmap_setbit(SB1->mapaBloques, 1, 1);
     }
     
     if (unmountFS() == -1){
@@ -112,7 +120,7 @@ int unmountFS(void)
  */
 int createFile(char *fileName)
 {
-    if(strlen(fileName)>MAX_FILE_SIZE) return -2;
+    if(strlen(fileName)>MAX_NAME_LENGHT) return -2;
     if(namei(fileName)!=-1){
         printf("File already exists\n");
         return -1;
@@ -161,14 +169,15 @@ int createFile(char *fileName)
  */
 int removeFile(char *fileName)
 {
-    char bloque[BLOCK_SIZE];
-    memset(bloque, '\0', BLOCK_SIZE);
-
+    if(strlen(fileName)>MAX_NAME_LENGHT) return -2;
     int inode;
     if((inode = namei(fileName))==-1){
         printf("File does not exist\n");
         return -1;
     }else{
+        char bloque[BLOCK_SIZE];
+        memset(bloque, '\0', BLOCK_SIZE);
+
         //Liberamos el inodo
         bitmap_setbit(SB1.mapaINodos, inode, 0);
 
@@ -176,7 +185,7 @@ int removeFile(char *fileName)
         for (int j = 0; j < 5; j++)
         {
             if(inode<MAX_FILES/2){
-                strcpy(SB1.inodos[inode].nombre, "\0");
+                memset(SB1.inodos[inode].nombre, '\0', MAX_NAME_LENGHT+1);
                 if(SB1.inodos[inode].bloque[j]!=0){
                     if (bwrite(DEVICE_IMAGE, SB1.inodos[inode].bloque[j], bloque) == -1){
                         printf("Error bwrite\n");
@@ -185,9 +194,10 @@ int removeFile(char *fileName)
                     SB1.inodos[inode].bloque[j] = 0;
                 }
                 SB1.inodos[inode].size = 0;
+                SB1.inodos[inode].crc = 0;
             }else{
                 inode -= MAX_FILES/2;
-                strcpy(SB2.inodos[inode].nombre, "\0");
+                memset(SB2.inodos[inode].nombre, '\0', MAX_NAME_LENGHT+1);
                 if(SB2.inodos[inode].bloque[j]!=0){
                     if (bwrite(DEVICE_IMAGE, SB2.inodos[inode].bloque[j], bloque) == -1){
                         printf("Error bwrite\n");
@@ -196,6 +206,7 @@ int removeFile(char *fileName)
                     SB2.inodos[inode].bloque[j] = 0;
                 }
                 SB2.inodos[inode].size = 0;
+                SB2.inodos[inode].crc = 0;
             }
         }
         return 0;
@@ -260,109 +271,6 @@ int closeFile(int fileDescriptor)
     Inodos[fileDescriptor].posPuntero=0;
 
 	return 0;
-}
-
-int bmap(int i, int pos){
-    int bloquepuntero = 0;
-
-    if(i < MAX_FILES/2){
-        if(pos <= BLOCK_SIZE) bloquepuntero = SB1.inodos[i].bloque[0];
-        else if(pos <= BLOCK_SIZE*2){
-            if((bloquepuntero = SB1.inodos[i].bloque[1])==0){
-                //Buscamos un bloque libre
-                for(int i = 2 ; i < SB1.diskSize/BLOCK_SIZE ; i++){ //Los dos bloques de SB
-                    if(bitmap_getbit(SB1.mapaBloques, i)==0){
-                        bitmap_setbit(SB1.mapaBloques, i, 1);
-                        bloquepuntero = i;
-                        break;
-                    }
-                }
-            }
-        }else if(pos <= BLOCK_SIZE*3){
-            if((bloquepuntero = SB1.inodos[i].bloque[2])==0){
-                //Buscamos un bloque libre
-                for(int i = 2 ; i < SB1.diskSize/BLOCK_SIZE ; i++){
-                    if(bitmap_getbit(SB1.mapaBloques, i)==0){
-                        bitmap_setbit(SB1.mapaBloques, i, 1);
-                        bloquepuntero = i;
-                        break;
-                    }
-                }
-            }
-        }else if(pos <= BLOCK_SIZE*4){
-            if((bloquepuntero = SB1.inodos[i].bloque[3])==0){
-                //Buscamos un bloque libre
-                for(int i = 2 ; i < SB1.diskSize/BLOCK_SIZE ; i++){
-                    if(bitmap_getbit(SB1.mapaBloques, i)==0){
-                        bitmap_setbit(SB1.mapaBloques, i, 1);
-                        bloquepuntero = i;
-                        break;
-                    }
-                }
-            }
-        }else if(pos <= BLOCK_SIZE*5){
-            if((bloquepuntero = SB1.inodos[i].bloque[4])==0){
-                //Buscamos un bloque libre
-                for(int i = 2 ; i < SB1.diskSize/BLOCK_SIZE ; i++){
-                    if(bitmap_getbit(SB1.mapaBloques, i)==0){
-                        bitmap_setbit(SB1.mapaBloques, i, 1);
-                        bloquepuntero = i;
-                        break;
-                    }
-                }
-            }
-        }
-    }else{
-        i -= MAX_FILES/2;
-        if(pos <= BLOCK_SIZE) bloquepuntero = SB2.inodos[i].bloque[0];
-        else if(pos <= BLOCK_SIZE*2){
-            if((bloquepuntero = SB2.inodos[i].bloque[1])==0){
-                //Buscamos un bloque libre
-                for(int i = 2 ; i < SB1.diskSize/BLOCK_SIZE ; i++){
-                    if(bitmap_getbit(SB1.mapaBloques, i)==0){
-                        bitmap_setbit(SB1.mapaBloques, i, 1);
-                        bloquepuntero = i;
-                        break;
-                    }
-                }
-            }
-        }else if(pos <= BLOCK_SIZE*3){
-            if((bloquepuntero = SB2.inodos[i].bloque[2])==0){
-                //Buscamos un bloque libre
-                for(int i = 2 ; i < SB1.diskSize/BLOCK_SIZE ; i++){
-                    if(bitmap_getbit(SB1.mapaBloques, i)==0){
-                        bitmap_setbit(SB1.mapaBloques, i, 1);
-                        bloquepuntero = i;
-                        break;
-                    }
-                }
-            }
-        }else if(pos <= BLOCK_SIZE*4){
-            if((bloquepuntero = SB2.inodos[i].bloque[3])==0){
-                //Buscamos un bloque libre
-                for(int i = 2 ; i < SB1.diskSize/BLOCK_SIZE ; i++){
-                    if(bitmap_getbit(SB1.mapaBloques, i)==0){
-                        bitmap_setbit(SB1.mapaBloques, i, 1);
-                        bloquepuntero = i;
-                        break;
-                    }
-                }
-            }
-        }else if(pos <= BLOCK_SIZE*5){
-            if((bloquepuntero = SB2.inodos[i].bloque[4])==0){
-                //Buscamos un bloque libre
-                for(int i = 2 ; i < SB1.diskSize/BLOCK_SIZE ; i++){
-                    if(bitmap_getbit(SB1.mapaBloques, i)==0){
-                        bitmap_setbit(SB1.mapaBloques, i, 1);
-                        bloquepuntero = i;
-                        break;
-                    }
-                }
-            }
-        }
-    }
-    if(bloquepuntero==0) return -1; //el fichero no tiene nada
-    return bloquepuntero;
 }
 
 /*
@@ -492,7 +400,7 @@ int lseekFile(int fileDescriptor, long offset, int whence)
     //Actualizamos el puntero
     if(whence == FS_SEEK_CUR) Inodos[fileDescriptor].posPuntero += offset;
     else if(whence == FS_SEEK_BEGIN) Inodos[fileDescriptor].posPuntero = 0;
-    else if(whence == FS_SEEK_END) Inodos[fileDescriptor].posPuntero = MAX_FILE_SIZE - 1; //duda aqui de si se quita 1
+    else if(whence == FS_SEEK_END) Inodos[fileDescriptor].posPuntero = MAX_FILE_SIZE;
 
 	return 0;
 }
@@ -681,8 +589,12 @@ int closeFileIntegrity(int fileDescriptor)
 int createLn(char *fileName, char *linkName)
 {
     int inodo;
+    if(namei(linkName)!=-1){
+        printf("Symbolic link already exists\n");
+        return -1;
+    }
     if((inodo = namei(fileName))==-1){
-        printf("File does not exists\n");
+        printf("File does not exist\n");
         return -1;
     }else{
         int i;
@@ -734,11 +646,10 @@ int createLn(char *fileName, char *linkName)
 int removeLn(char *linkName)
 {
     //Cogemos el inodo
-    int inodo = 0;
-    inodo = namei(linkName);
+    int inodo = namei(linkName);
     
     if(inodo == -1){
-        printf("File does not exist\n");
+        printf("Symbolic link does not exist\n");
         return -1;
     }
     
@@ -747,12 +658,12 @@ int removeLn(char *linkName)
 
     //Borramos la informacion del inodo
     if(inodo < MAX_FILES/2) {
-        strcpy(SB1.inodos[inodo].nombre, "");
+        memset(SB1.inodos[inodo].nombre, '\0', MAX_NAME_LENGHT+1);
         SB1.inodos[inodo].bloque[0] = 0;      
         return 0;
     } else {
         inodo -= MAX_FILES/2;
-        strcpy(SB2.inodos[inodo].nombre, "");  
+        memset(SB2.inodos[inodo].nombre, '\0', MAX_NAME_LENGHT+1);
         SB2.inodos[inodo].bloque[0] = 0;      
         return 0;
     }    
@@ -795,4 +706,111 @@ int bi(int block)
     }
     
     return -1;
+}
+
+/*
+ * @brief 	        Translates a position into block, if the block does not exist it is created in the inode
+ * @return 	        returns the actual block
+ */
+int bmap(int i, int pos){
+    int bloquepuntero = 0;
+
+    if(i < MAX_FILES/2){
+        if(pos <= BLOCK_SIZE) bloquepuntero = SB1.inodos[i].bloque[0];
+        else if(pos <= BLOCK_SIZE*2){
+            if((bloquepuntero = SB1.inodos[i].bloque[1])==0){
+                //Buscamos un bloque libre
+                for(int i = 2 ; i < SB1.diskSize/BLOCK_SIZE ; i++){ //Los dos bloques de SB
+                    if(bitmap_getbit(SB1.mapaBloques, i)==0){
+                        bitmap_setbit(SB1.mapaBloques, i, 1);
+                        bloquepuntero = i;
+                        break;
+                    }
+                }
+            }
+        }else if(pos <= BLOCK_SIZE*3){
+            if((bloquepuntero = SB1.inodos[i].bloque[2])==0){
+                //Buscamos un bloque libre
+                for(int i = 2 ; i < SB1.diskSize/BLOCK_SIZE ; i++){
+                    if(bitmap_getbit(SB1.mapaBloques, i)==0){
+                        bitmap_setbit(SB1.mapaBloques, i, 1);
+                        bloquepuntero = i;
+                        break;
+                    }
+                }
+            }
+        }else if(pos <= BLOCK_SIZE*4){
+            if((bloquepuntero = SB1.inodos[i].bloque[3])==0){
+                //Buscamos un bloque libre
+                for(int i = 2 ; i < SB1.diskSize/BLOCK_SIZE ; i++){
+                    if(bitmap_getbit(SB1.mapaBloques, i)==0){
+                        bitmap_setbit(SB1.mapaBloques, i, 1);
+                        bloquepuntero = i;
+                        break;
+                    }
+                }
+            }
+        }else if(pos <= BLOCK_SIZE*5){
+            if((bloquepuntero = SB1.inodos[i].bloque[4])==0){
+                //Buscamos un bloque libre
+                for(int i = 2 ; i < SB1.diskSize/BLOCK_SIZE ; i++){
+                    if(bitmap_getbit(SB1.mapaBloques, i)==0){
+                        bitmap_setbit(SB1.mapaBloques, i, 1);
+                        bloquepuntero = i;
+                        break;
+                    }
+                }
+            }
+        }
+    }else{
+        i -= MAX_FILES/2;
+        if(pos <= BLOCK_SIZE) bloquepuntero = SB2.inodos[i].bloque[0];
+        else if(pos <= BLOCK_SIZE*2){
+            if((bloquepuntero = SB2.inodos[i].bloque[1])==0){
+                //Buscamos un bloque libre
+                for(int i = 2 ; i < SB1.diskSize/BLOCK_SIZE ; i++){
+                    if(bitmap_getbit(SB1.mapaBloques, i)==0){
+                        bitmap_setbit(SB1.mapaBloques, i, 1);
+                        bloquepuntero = i;
+                        break;
+                    }
+                }
+            }
+        }else if(pos <= BLOCK_SIZE*3){
+            if((bloquepuntero = SB2.inodos[i].bloque[2])==0){
+                //Buscamos un bloque libre
+                for(int i = 2 ; i < SB1.diskSize/BLOCK_SIZE ; i++){
+                    if(bitmap_getbit(SB1.mapaBloques, i)==0){
+                        bitmap_setbit(SB1.mapaBloques, i, 1);
+                        bloquepuntero = i;
+                        break;
+                    }
+                }
+            }
+        }else if(pos <= BLOCK_SIZE*4){
+            if((bloquepuntero = SB2.inodos[i].bloque[3])==0){
+                //Buscamos un bloque libre
+                for(int i = 2 ; i < SB1.diskSize/BLOCK_SIZE ; i++){
+                    if(bitmap_getbit(SB1.mapaBloques, i)==0){
+                        bitmap_setbit(SB1.mapaBloques, i, 1);
+                        bloquepuntero = i;
+                        break;
+                    }
+                }
+            }
+        }else if(pos <= BLOCK_SIZE*5){
+            if((bloquepuntero = SB2.inodos[i].bloque[4])==0){
+                //Buscamos un bloque libre
+                for(int i = 2 ; i < SB1.diskSize/BLOCK_SIZE ; i++){
+                    if(bitmap_getbit(SB1.mapaBloques, i)==0){
+                        bitmap_setbit(SB1.mapaBloques, i, 1);
+                        bloquepuntero = i;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    if(bloquepuntero==0) return -1; //el fichero no tiene nada
+    return bloquepuntero;
 }
