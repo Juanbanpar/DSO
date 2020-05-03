@@ -240,12 +240,14 @@ int openFile(char *fileName)
     //if(SB1.inodos[fd].tipo == 1 || SB2.inodos[fd/2].tipo == 1){
     if(SB1.inodos[fd].tipo == 1 || SB2.inodos[fd-24].tipo == 1){
         if(fd < MAX_FILES/2){
+            Inodos[fd].estado=0;
             fd = bi(SB1.inodos[fd].bloque[0]);
             if(Inodos[fd].estado==1){
                 return -2; //Ya esta abierto, cuidadito
             }
         }else{
             //fd = bi(SB2.inodos[fd/2].bloque[0]);
+            Inodos[fd].estado=0;
             fd = bi(SB2.inodos[fd-24].bloque[0]);
             if(Inodos[fd].estado==1){
                 return -2; //Ya esta abierto, cuidadito
