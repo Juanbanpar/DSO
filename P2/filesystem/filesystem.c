@@ -91,6 +91,13 @@ int mountFS(void)
  */
 int unmountFS(void)
 {
+    for (int i = 0; i < MAX_FILES; i++) {
+        if (Inodos[i].estado == 1) {
+            printf("Error unmountFS: file %d is still open", i);
+            return -1;
+        }
+    }
+    
     if (bwrite(DEVICE_IMAGE, 0, ((char *)&(SB1))) == -1 || bwrite(DEVICE_IMAGE, 1, ((char *)&(SB2))) == -1){
         printf("Error bwrite\n");
         return -1;
@@ -803,7 +810,7 @@ int namei(char *file_name)
     for (int i = 0; i < MAX_FILES/2; i++)
     {
         if(strcmp(SB1.inodos[i].nombre, file_name)==0) return i;
-        else if(strcmp(SB2.inodos[i].nombre, file_name)==0) return i*2;
+        else if(strcmp(SB2.inodos[i].nombre, file_name)==0) return i+24;
     }
     
     return -1;
@@ -824,7 +831,7 @@ int bi(int block)
             if(SB1.inodos[i].tipo!=1) return i;
         }
         else if(SB2.inodos[i].bloque[0]==block){
-            if(SB1.inodos[i].tipo!=1) return i*2;
+            if(SB1.inodos[i].tipo!=1) return i+24;
         }
     }
     
