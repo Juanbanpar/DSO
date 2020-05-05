@@ -50,78 +50,15 @@ int main()
 
 	///////
 
-	ret = createFile("/test.txt");
-	if (ret != 0)
-	{
-		fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST createFile ", ANSI_COLOR_RED, "FAILED\n", ANSI_COLOR_RESET);
-		return -1;
-	}
-	fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST createFile ", ANSI_COLOR_GREEN, "SUCCESS\n", ANSI_COLOR_RESET);
+	// ret = createFile("/test.txt");
+	// if (ret != 0)
+	// {
+	// 	fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST createFile ", ANSI_COLOR_RED, "FAILED\n", ANSI_COLOR_RESET);
+	// 	return -1;
+	// }
+	// fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST createFile ", ANSI_COLOR_GREEN, "SUCCESS\n", ANSI_COLOR_RESET);
 
-	ret = unmountFS();
-	ret = mountFS();
-	int nepe=0;
-	int patata = openFile("/test.txt");
-	printf("Descriptor del fichero %d\n", patata);
-	char buffer1[2048]="patata";
-	for(int o=0;o<2048; o++){
-		buffer1[o]= 'a';
-	}
-	char buffer[4096];
-	int escrito= writeFile(patata, buffer1, 2047);
-	printf("Numero de bytes escritos %d \n", escrito);
-	//int nepe=closeFile(patata);
-	//printf("Valor del close file: %d\n", nepe);
-	for(int o=0;o<2048; o++){
-		buffer1[o]= 'b';
-	}
-	escrito= writeFile(patata, buffer1, 1);
-	printf("Numero de bytes escritos %d \n", escrito);
-	int patat2 = lseekFile(patata, 0,FS_SEEK_BEGIN);
-	printf("Valor del lseek: %d\n", patat2);
-	//patata = openFile("/test.txt");
-	int leeido = readFile(patata, buffer, 4096);
-	printf("Cadena leida: %s\n", buffer);
-	printf("Numero de bytes leidos %d\n", leeido);
-	nepe=closeFile(patata);
-	printf("Valor del close file: %d\n", nepe);
-    
-    //nepe=removeFile("/test.txt");
-	//printf("Valor del remove file: %d\n", nepe);
-	
-    patata = openFile("/test.txt");
-    printf("Valor del open file: %d\n", patata);
-    
-    nepe=includeIntegrity("/test.txt");
-    printf("Valor del Integrity file: %d\n", nepe);
-    nepe=checkFile("/test.txt");
-    printf("Valor del checkFile file: %d\n", nepe);
-    nepe=closeFile(patata);
-	printf("Valor del close file: %d\n", nepe);
-	nepe=removeFile("/test.txt");
-	// printf("Valor del remove file: %d\n", nepe);
-	// ret = unmountFS();
-    // patata=openFileIntegrity("/test.txt");
-    // printf("Valor del openFileIntegrity file: %d\n", patata);
-    // nepe=closeFileIntegrity(patata);
-	// printf("Valor del close file: %d\n", nepe);
-
-	// char buffer3[2048] = "";
-	// patata=createLn("/test.txt", "/link");
-    // printf("Valor del createLn: %d\n", patata);
-	// patata=openFile("/link");
-    // printf("Valor del openLn: %d\n", patata);
-	// nepe=readFile(patata , buffer3, 6);
-    // printf("Valor del readLn: %d\n", nepe);
-	// printf("Cadena leida: %s\n", buffer3);
-	// strcpy(buffer3, " holi");
-	// nepe=writeFile(patata, buffer3, 5);
-    // printf("Valor del writeLn: %d\n", nepe);
-	// nepe=closeFile(patata);
-    // printf("Valor del closeLn: %d\n", nepe);
-	// nepe=removeLn("/link");
-    // printf("Valor del removeLn: %d\n", nepe);
-	///////
+	// ///////
 
 	ret = unmountFS();
 	if (ret != 0)
