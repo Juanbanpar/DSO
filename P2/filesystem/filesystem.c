@@ -352,51 +352,27 @@ int writeFile(int fileDescriptor, void *buffer, int numBytes)
 {
     char buff[BLOCK_SIZE];
     int b_id;
-    if(fileDescriptor<0 || fileDescriptor>47){
+    if(fileDescriptor<0 || fileDescriptor>MAX_FILES-1){
         return -1;
     }
     if(numBytes<0){
         return -1;
     }
-    if(fileDescriptor<MAX_FILES/2){
-        //se comprueba que el fichero este abierto
-        if(Inodos[fileDescriptor].estado==1){
-            if(Inodos[fileDescriptor].posPuntero==2047){
-                Inodos[fileDescriptor].posPuntero++;
-            }
-            if(Inodos[fileDescriptor].posPuntero==4095){
-                Inodos[fileDescriptor].posPuntero++;
-            }
-            if(Inodos[fileDescriptor].posPuntero==6143){
-                Inodos[fileDescriptor].posPuntero++;
-            }
-            if(Inodos[fileDescriptor].posPuntero==8191){
-                Inodos[fileDescriptor].posPuntero++;
-            }
-            int bytesribir=numBytes;
-            if(Inodos[fileDescriptor].posPuntero<2047){
-                bytesribir=  Inodos[fileDescriptor].posPuntero;
-            }
-            
-            if(Inodos[fileDescriptor].posPuntero>2047 && Inodos[fileDescriptor].posPuntero<4095){
-                bytesribir=  Inodos[fileDescriptor].posPuntero - BLOCK_SIZE*1;
-            }
-            if(Inodos[fileDescriptor].posPuntero>4095 && Inodos[fileDescriptor].posPuntero<6143){
-                bytesribir=  Inodos[fileDescriptor].posPuntero - BLOCK_SIZE*2;
-            }
-            if(Inodos[fileDescriptor].posPuntero>6143 && Inodos[fileDescriptor].posPuntero<8191){
-                bytesribir=  Inodos[fileDescriptor].posPuntero - BLOCK_SIZE*3;
-            }
-            if(Inodos[fileDescriptor].posPuntero>8191 && Inodos[fileDescriptor].posPuntero<10240){
-                bytesribir=  Inodos[fileDescriptor].posPuntero - BLOCK_SIZE*4;
-            }
-            //se escribe lo justo, sino se escribe hasta el maximo posible
-            if(bytesribir+numBytes > BLOCK_SIZE){
-                numBytes = bytesribir;
-            }
-            if(numBytes <= 0){
-                return 0;
-            }
+    
+    //se comprueba que el fichero este abierto
+    if(Inodos[fileDescriptor].estado==1){
+
+        if(Inodos[fileDescriptor].posPuntero==BLOCK_SIZE -1 || Inodos[fileDescriptor].posPuntero==BLOCK_SIZE*2 -1 || \
+          Inodos[fileDescriptor].posPuntero==BLOCK_SIZE*3 - 1 || Inodos[fileDescriptor].posPuntero==BLOCK_SIZE*4 - 1 ){
+                
+            Inodos[fileDescriptor].posPuntero++;
+        }
+
+        if(Inodos[fileDescriptor].posPuntero % BLOCK_SIZE + numBytes > BLOCK_SIZE){
+            numBytes = BLOCK_SIZE - Inodos[fileDescriptor].posPuntero % BLOCK_SIZE;
+        }
+
+        if(fileDescriptor<MAX_FILES/2){
             b_id = bmap(fileDescriptor, Inodos[fileDescriptor].posPuntero);
             //printf("que bloque ha escrito: %d\n", b_id);
             bread(DEVICE_IMAGE, b_id, buff);
@@ -405,54 +381,16 @@ int writeFile(int fileDescriptor, void *buffer, int numBytes)
             Inodos[fileDescriptor].posPuntero+= numBytes-1;
             SB1.inodos[fileDescriptor].size+= numBytes;
             return numBytes;
-        }
-        
-    }else{
-        //se comprueba que el fichero este abierto
-        if(Inodos[fileDescriptor].estado==1){
-            if(Inodos[fileDescriptor].posPuntero==2047){
-                Inodos[fileDescriptor].posPuntero++;
-            }
-            if(Inodos[fileDescriptor].posPuntero==4095){
-                Inodos[fileDescriptor].posPuntero++;
-            }
-            if(Inodos[fileDescriptor].posPuntero==6143){
-                Inodos[fileDescriptor].posPuntero++;
-            }
-            if(Inodos[fileDescriptor].posPuntero==8191){
-                Inodos[fileDescriptor].posPuntero++;
-            }
-            int bytesribir=0;
-            if(Inodos[fileDescriptor].posPuntero<2047){
-                bytesribir=  Inodos[fileDescriptor].posPuntero;
-            }
-            if(Inodos[fileDescriptor].posPuntero>2047 && Inodos[fileDescriptor].posPuntero<4095){
-                bytesribir=  Inodos[fileDescriptor].posPuntero - BLOCK_SIZE*2;
-            }
-            if(Inodos[fileDescriptor].posPuntero>4095 && Inodos[fileDescriptor].posPuntero<6143){
-                bytesribir=  Inodos[fileDescriptor].posPuntero - BLOCK_SIZE*3;
-            }
-            if(Inodos[fileDescriptor].posPuntero>6143 && Inodos[fileDescriptor].posPuntero<8191){
-                bytesribir=  Inodos[fileDescriptor].posPuntero - BLOCK_SIZE*4;
-            }
-            if(Inodos[fileDescriptor].posPuntero>8191 && Inodos[fileDescriptor].posPuntero<10240){
-                bytesribir=  Inodos[fileDescriptor].posPuntero - BLOCK_SIZE*5;
-            }
-            if(bytesribir + numBytes > BLOCK_SIZE){
-                numBytes = BLOCK_SIZE - Inodos[fileDescriptor].posPuntero;
-            }
-            if(numBytes <= 0){
-                return 0; //no hay espacio suficiente
-            }
+        }else{
             b_id = bmap(fileDescriptor, Inodos[fileDescriptor].posPuntero);
             bread(DEVICE_IMAGE, b_id, buff);
             memmove(buff, (void *) buffer, numBytes);
             bwrite(DEVICE_IMAGE, b_id,buff);
             Inodos[fileDescriptor].posPuntero+= numBytes;
+            fileDescriptor -= MAX_FILES/2;
             SB2.inodos[fileDescriptor].size+= numBytes;
             return numBytes;
         }
-        
     }
 	return -1;
 }
