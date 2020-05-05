@@ -64,15 +64,23 @@ int main()
 	int patata = openFile("/test.txt");
 	printf("Descriptor del fichero %d\n", patata);
 	char buffer1[2048]="patata";
-	char buffer[2048];
-	int escrito= writeFile(patata, buffer1, 10);
+	for(int o=0;o<2048; o++){
+		buffer1[o]= 'a';
+	}
+	char buffer[4096];
+	int escrito= writeFile(patata, buffer1, 2048);
 	printf("Numero de bytes escritos %d \n", escrito);
 	//int nepe=closeFile(patata);
 	//printf("Valor del close file: %d\n", nepe);
+	for(int o=0;o<2048; o++){
+		buffer1[o]= 'b';
+	}
+	escrito= writeFile(patata, buffer1, 2048);
+	printf("Numero de bytes escritos %d \n", escrito);
 	int patat2 = lseekFile(patata, 0,FS_SEEK_BEGIN);
 	printf("Valor del lseek: %d\n", patat2);
 	//patata = openFile("/test.txt");
-	int leeido = readFile(patata, buffer, 6);
+	int leeido = readFile(patata, buffer, 4096);
 	printf("Cadena leida: %s\n", buffer);
 	printf("Numero de bytes leidos %d\n", leeido);
 	nepe=closeFile(patata);

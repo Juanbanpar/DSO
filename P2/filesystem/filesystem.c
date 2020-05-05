@@ -291,6 +291,14 @@ int readFile(int fileDescriptor, void *buffer, int numBytes)
             if(numBytes <= 0) return 0;
 
             b_id = bmap(fileDescriptor, Inodos[fileDescriptor].posPuntero);
+            int contador=0;
+            for(int j=0;j<5;j++){
+                if(SB1.inodos[inode].bloque[j]!=0){
+                    contador++;
+                }
+            }
+            
+            for(int i=0; i<)
             bread(DEVICE_IMAGE, b_id, buff);
             memmove(buffer, (void *) buff, numBytes);
             Inodos[fileDescriptor].posPuntero+= numBytes;
@@ -329,18 +337,49 @@ int writeFile(int fileDescriptor, void *buffer, int numBytes)
     if(fileDescriptor<MAX_FILES/2){
         //se comprueba que el fichero este abierto
         if(Inodos[fileDescriptor].estado==1){
+            if(Inodos[fileDescriptor].posPuntero==2047){
+                Inodos[fileDescriptor].posPuntero++;
+                printf("JGDGJHDGJDGJHDGJHDG\n");
+            }
+            if(Inodos[fileDescriptor].posPuntero==4095){
+                Inodos[fileDescriptor].posPuntero++;
+            }
+            if(Inodos[fileDescriptor].posPuntero==6143){
+                Inodos[fileDescriptor].posPuntero++;
+            }
+            if(Inodos[fileDescriptor].posPuntero==8191){
+                Inodos[fileDescriptor].posPuntero++;
+            }
+            int patataa=0;
+            if(Inodos[fileDescriptor].posPuntero<2047){
+                patataa=  Inodos[fileDescriptor].posPuntero - BLOCK_SIZE;
+            }
+            if(Inodos[fileDescriptor].posPuntero>2047 && Inodos[fileDescriptor].posPuntero<4095){
+                patataa=  Inodos[fileDescriptor].posPuntero - BLOCK_SIZE*2;
+            }
+            if(Inodos[fileDescriptor].posPuntero>4095 && Inodos[fileDescriptor].posPuntero<6143){
+                patataa=  Inodos[fileDescriptor].posPuntero - BLOCK_SIZE*3;
+            }
+            if(Inodos[fileDescriptor].posPuntero>6143 && Inodos[fileDescriptor].posPuntero<8191){
+                patataa=  Inodos[fileDescriptor].posPuntero - BLOCK_SIZE*4;
+            }
+            if(Inodos[fileDescriptor].posPuntero>8191 && Inodos[fileDescriptor].posPuntero<10240){
+                patataa=  Inodos[fileDescriptor].posPuntero - BLOCK_SIZE*5;
+            }
             //se escribe lo justo, sino se escribe hasta el maximo posible
-            if(Inodos[fileDescriptor].posPuntero+numBytes > BLOCK_SIZE){
+            if(patataa > BLOCK_SIZE){
                 numBytes = BLOCK_SIZE - Inodos[fileDescriptor].posPuntero;
+                printf("HJDHJKHJHHHHHHHHHH: %d\n", numBytes);
             }
             if(numBytes <= 0){
                 return 0;
             }
             b_id = bmap(fileDescriptor, Inodos[fileDescriptor].posPuntero);
+            printf("que bloque ha escrito: %d\n", b_id);
             bread(DEVICE_IMAGE, b_id, buff);
             memmove(buff, (void *) buffer, numBytes);
             bwrite(DEVICE_IMAGE, b_id,buff);
-            Inodos[fileDescriptor].posPuntero+= numBytes;
+            Inodos[fileDescriptor].posPuntero+= numBytes-1;
             SB1.inodos[fileDescriptor].size+= numBytes;
             printf("De cuanto es el size: %d\n", SB1.inodos[fileDescriptor].size);
             return numBytes;
@@ -717,9 +756,10 @@ int bmap(int i, int pos){
     int bloquepuntero = 0;
 
     if(i < MAX_FILES/2){
-        if(pos <= BLOCK_SIZE) bloquepuntero = SB1.inodos[i].bloque[0];
-        else if(pos <= BLOCK_SIZE*2){
+        if(pos <= BLOCK_SIZE-1) bloquepuntero = SB1.inodos[i].bloque[0];
+        else if(pos <= (BLOCK_SIZE*2)-1){
             if((bloquepuntero = SB1.inodos[i].bloque[1])==0){
+                printf("LA CONCHA DE LA LORAAAAA");
                 //Buscamos un bloque libre
                 for(int i = 2 ; i < SB1.diskSize/BLOCK_SIZE ; i++){ //Los dos bloques de SB
                     if(bitmap_getbit(SB1.mapaBloques, i)==0){
@@ -729,7 +769,7 @@ int bmap(int i, int pos){
                     }
                 }
             }
-        }else if(pos <= BLOCK_SIZE*3){
+        }else if(pos <= (BLOCK_SIZE*3)-1){
             if((bloquepuntero = SB1.inodos[i].bloque[2])==0){
                 //Buscamos un bloque libre
                 for(int i = 2 ; i < SB1.diskSize/BLOCK_SIZE ; i++){
@@ -740,7 +780,7 @@ int bmap(int i, int pos){
                     }
                 }
             }
-        }else if(pos <= BLOCK_SIZE*4){
+        }else if(pos <= (BLOCK_SIZE*4)-1){
             if((bloquepuntero = SB1.inodos[i].bloque[3])==0){
                 //Buscamos un bloque libre
                 for(int i = 2 ; i < SB1.diskSize/BLOCK_SIZE ; i++){
@@ -751,7 +791,7 @@ int bmap(int i, int pos){
                     }
                 }
             }
-        }else if(pos <= BLOCK_SIZE*5){
+        }else if(pos <= (BLOCK_SIZE*5)-1){
             if((bloquepuntero = SB1.inodos[i].bloque[4])==0){
                 //Buscamos un bloque libre
                 for(int i = 2 ; i < SB1.diskSize/BLOCK_SIZE ; i++){
