@@ -364,25 +364,26 @@ int writeFile(int fileDescriptor, void *buffer, int numBytes)
             if(Inodos[fileDescriptor].posPuntero==8191){
                 Inodos[fileDescriptor].posPuntero++;
             }
-            int bytesribir=0;
+            int bytesribir=numBytes;
             if(Inodos[fileDescriptor].posPuntero<2047){
                 bytesribir=  Inodos[fileDescriptor].posPuntero;
             }
+            
             if(Inodos[fileDescriptor].posPuntero>2047 && Inodos[fileDescriptor].posPuntero<4095){
-                bytesribir=  Inodos[fileDescriptor].posPuntero - BLOCK_SIZE*2;
+                bytesribir=  Inodos[fileDescriptor].posPuntero - BLOCK_SIZE*1;
             }
             if(Inodos[fileDescriptor].posPuntero>4095 && Inodos[fileDescriptor].posPuntero<6143){
-                bytesribir=  Inodos[fileDescriptor].posPuntero - BLOCK_SIZE*3;
+                bytesribir=  Inodos[fileDescriptor].posPuntero - BLOCK_SIZE*2;
             }
             if(Inodos[fileDescriptor].posPuntero>6143 && Inodos[fileDescriptor].posPuntero<8191){
-                bytesribir=  Inodos[fileDescriptor].posPuntero - BLOCK_SIZE*4;
+                bytesribir=  Inodos[fileDescriptor].posPuntero - BLOCK_SIZE*3;
             }
             if(Inodos[fileDescriptor].posPuntero>8191 && Inodos[fileDescriptor].posPuntero<10240){
-                bytesribir=  Inodos[fileDescriptor].posPuntero - BLOCK_SIZE*5;
+                bytesribir=  Inodos[fileDescriptor].posPuntero - BLOCK_SIZE*4;
             }
             //se escribe lo justo, sino se escribe hasta el maximo posible
-            if(bytesribir > BLOCK_SIZE){
-                numBytes = BLOCK_SIZE - Inodos[fileDescriptor].posPuntero;
+            if(bytesribir+numBytes > BLOCK_SIZE){
+                numBytes = bytesribir;
             }
             if(numBytes <= 0){
                 return 0;
@@ -428,7 +429,7 @@ int writeFile(int fileDescriptor, void *buffer, int numBytes)
             if(Inodos[fileDescriptor].posPuntero>8191 && Inodos[fileDescriptor].posPuntero<10240){
                 bytesribir=  Inodos[fileDescriptor].posPuntero - BLOCK_SIZE*5;
             }
-            if(bytesribir > BLOCK_SIZE){
+            if(bytesribir + numBytes > BLOCK_SIZE){
                 numBytes = BLOCK_SIZE - Inodos[fileDescriptor].posPuntero;
             }
             if(numBytes <= 0){
