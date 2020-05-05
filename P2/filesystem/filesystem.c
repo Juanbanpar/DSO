@@ -260,6 +260,9 @@ int closeFile(int fileDescriptor)
     if(fileDescriptor < 0 || fileDescriptor > MAX_FILES){
         return -1; //el fichero no existe
     }
+    if(Inodos[fileDescriptor].estado==0){
+        return -1;
+    }
     
     if (Inodos[fileDescriptor].integridad == 1) {
         printf("NF11: You can't close a file opened using openFileIntegrity using closeFile");
@@ -280,6 +283,12 @@ int readFile(int fileDescriptor, void *buffer, int numBytes)
 {
     char buff[MAX_FILE_SIZE];
     int b_id;
+    if(fileDescriptor<0 || fileDescriptor>47){
+        return -1;
+    }
+    if(numBytes<0){
+        return -1;
+    }
 
     if(fileDescriptor < MAX_FILES/2){
         //se comprueba que el fichero este abierto
@@ -349,6 +358,12 @@ int writeFile(int fileDescriptor, void *buffer, int numBytes)
 {
     char buff[BLOCK_SIZE];
     int b_id;
+    if(fileDescriptor<0 || fileDescriptor>47){
+        return -1;
+    }
+    if(numBytes<0){
+        return -1;
+    }
     if(fileDescriptor<MAX_FILES/2){
         //se comprueba que el fichero este abierto
         if(Inodos[fileDescriptor].estado==1){

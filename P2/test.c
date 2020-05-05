@@ -60,16 +60,18 @@ int main()
 
 	ret = unmountFS();
 	ret = mountFS();
-	int nepe=0;
+	//int nepe=0;
 	int patata = openFile("/test.txt");
 	printf("Descriptor del fichero %d\n", patata);
+	
 	char buffer1[2048]="patata";
 	for(int o=0;o<2048; o++){
 		buffer1[o]= 'a';
 	}
-	char buffer[4096];
-	int escrito= writeFile(patata, buffer1, 2048);
+	//char buffer[4096];
+	int escrito= writeFile(patata, buffer1, -500);
 	printf("Numero de bytes escritos %d \n", escrito);
+	/*
 	//int nepe=closeFile(patata);
 	//printf("Valor del close file: %d\n", nepe);
 	for(int o=0;o<2048; o++){
@@ -122,7 +124,7 @@ int main()
 	// nepe=removeLn("/link");
     // printf("Valor del removeLn: %d\n", nepe);
 	///////
-
+*/
 	ret = unmountFS();
 	if (ret != 0)
 	{
