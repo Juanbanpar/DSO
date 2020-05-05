@@ -68,14 +68,14 @@ int main()
 		buffer1[o]= 'a';
 	}
 	char buffer[4096];
-	int escrito= writeFile(patata, buffer1, 2048);
+	int escrito= writeFile(patata, buffer1, 2047);
 	printf("Numero de bytes escritos %d \n", escrito);
 	//int nepe=closeFile(patata);
 	//printf("Valor del close file: %d\n", nepe);
 	for(int o=0;o<2048; o++){
 		buffer1[o]= 'b';
 	}
-	escrito= writeFile(patata, buffer1, 2048);
+	escrito= writeFile(patata, buffer1, 1);
 	printf("Numero de bytes escritos %d \n", escrito);
 	int patat2 = lseekFile(patata, 0,FS_SEEK_BEGIN);
 	printf("Valor del lseek: %d\n", patat2);
