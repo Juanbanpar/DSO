@@ -254,6 +254,9 @@ int closeFile(int fileDescriptor)
     if(fileDescriptor < 0 || fileDescriptor > MAX_FILES){
         return -1; //el fichero no existe
     }
+    if(Inodos[fileDescriptor].estado==0){
+        return -1;
+    }
     
     if (Inodos[fileDescriptor].integridad == 1) {
         printf("NF11: You can't close a file opened using openFileIntegrity using closeFile");
@@ -274,6 +277,12 @@ int readFile(int fileDescriptor, void *buffer, int numBytes)
 {
     char buff[MAX_FILE_SIZE];
     int b_id;
+    if(fileDescriptor<0 || fileDescriptor>47){
+        return -1;
+    }
+    if(numBytes<0){
+        return -1;
+    }
 
     if(fileDescriptor < MAX_FILES/2){
         //se comprueba que el fichero este abierto
@@ -343,6 +352,12 @@ int writeFile(int fileDescriptor, void *buffer, int numBytes)
 {
     char buff[BLOCK_SIZE];
     int b_id;
+    if(fileDescriptor<0 || fileDescriptor>47){
+        return -1;
+    }
+    if(numBytes<0){
+        return -1;
+    }
     if(fileDescriptor<MAX_FILES/2){
         //se comprueba que el fichero este abierto
         if(Inodos[fileDescriptor].estado==1){
@@ -358,25 +373,26 @@ int writeFile(int fileDescriptor, void *buffer, int numBytes)
             if(Inodos[fileDescriptor].posPuntero==8191){
                 Inodos[fileDescriptor].posPuntero++;
             }
-            int bytesribir=0;
+            int bytesribir=numBytes;
             if(Inodos[fileDescriptor].posPuntero<2047){
                 bytesribir=  Inodos[fileDescriptor].posPuntero;
             }
+            
             if(Inodos[fileDescriptor].posPuntero>2047 && Inodos[fileDescriptor].posPuntero<4095){
-                bytesribir=  Inodos[fileDescriptor].posPuntero - BLOCK_SIZE*2;
+                bytesribir=  Inodos[fileDescriptor].posPuntero - BLOCK_SIZE*1;
             }
             if(Inodos[fileDescriptor].posPuntero>4095 && Inodos[fileDescriptor].posPuntero<6143){
-                bytesribir=  Inodos[fileDescriptor].posPuntero - BLOCK_SIZE*3;
+                bytesribir=  Inodos[fileDescriptor].posPuntero - BLOCK_SIZE*2;
             }
             if(Inodos[fileDescriptor].posPuntero>6143 && Inodos[fileDescriptor].posPuntero<8191){
-                bytesribir=  Inodos[fileDescriptor].posPuntero - BLOCK_SIZE*4;
+                bytesribir=  Inodos[fileDescriptor].posPuntero - BLOCK_SIZE*3;
             }
             if(Inodos[fileDescriptor].posPuntero>8191 && Inodos[fileDescriptor].posPuntero<10240){
-                bytesribir=  Inodos[fileDescriptor].posPuntero - BLOCK_SIZE*5;
+                bytesribir=  Inodos[fileDescriptor].posPuntero - BLOCK_SIZE*4;
             }
             //se escribe lo justo, sino se escribe hasta el maximo posible
-            if(bytesribir > BLOCK_SIZE){
-                numBytes = BLOCK_SIZE - Inodos[fileDescriptor].posPuntero;
+            if(bytesribir+numBytes > BLOCK_SIZE){
+                numBytes = bytesribir;
             }
             if(numBytes <= 0){
                 return 0;
@@ -422,7 +438,7 @@ int writeFile(int fileDescriptor, void *buffer, int numBytes)
             if(Inodos[fileDescriptor].posPuntero>8191 && Inodos[fileDescriptor].posPuntero<10240){
                 bytesribir=  Inodos[fileDescriptor].posPuntero - BLOCK_SIZE*5;
             }
-            if(bytesribir > BLOCK_SIZE){
+            if(bytesribir + numBytes > BLOCK_SIZE){
                 numBytes = BLOCK_SIZE - Inodos[fileDescriptor].posPuntero;
             }
             if(numBytes <= 0){
