@@ -35,7 +35,6 @@ int mkFS(long deviceSize)
 
     //Inicializar los valores iniciales
     SB1.diskSize = deviceSize;
-    printf("%ld\n", SB1.diskSize);
     for(int i=0; i<MAX_FILES; i++) bitmap_setbit(SB1.mapaINodos, i, 0);
     for (int i=2; i < deviceSize/BLOCK_SIZE; i++) bitmap_setbit(SB1.mapaBloques, i, 0);
     SB1.numMagico = 100383438;
