@@ -71,13 +71,14 @@ int mkFS(long deviceSize)
  */
 int mountFS(void)
 {
-    if (bread(DEVICE_IMAGE, 0, ((char *)&(SB1))) == -1 || bread(DEVICE_IMAGE, 1, ((char *)&(SB2))) == -1){
-        printf("Error bread\n");
-        return -1;
-    }
-    
+    //Comprobamos que sea nuestro FS
     if(SB1.numMagico != 100383438) {
         printf("Este FS no es PotooooooooFS");
+        return -1;
+    }
+
+    if (bread(DEVICE_IMAGE, 0, ((char *)&(SB1))) == -1 || bread(DEVICE_IMAGE, 1, ((char *)&(SB2))) == -1){
+        printf("Error bread\n");
         return -1;
     }
 
@@ -90,6 +91,13 @@ int mountFS(void)
  */
 int unmountFS(void)
 {
+
+    //Comprobamos que sea nuestro FS
+    if(SB1.numMagico != 100383438) {
+        printf("Este FS no es PotooooooooFS");
+        return -1;
+    }
+
     for (int i = 0; i < MAX_FILES; i++) {
         if (Inodos[i].estado == 1) {
             printf("Error unmountFS: file %d is still open", i);
@@ -111,6 +119,13 @@ int unmountFS(void)
  */
 int createFile(char *fileName)
 {
+
+    //Comprobamos que sea nuestro FS
+    if(SB1.numMagico != 100383438) {
+        printf("Este FS no es PotooooooooFS");
+        return -2;
+    }
+
     if(strlen(fileName)>MAX_NAME_LENGHT) return -2;
     if(namei(fileName)!=-1){
         printf("File already exists\n");
@@ -160,51 +175,59 @@ int createFile(char *fileName)
  */
 int removeFile(char *fileName)
 {
+
+    //Comprobamos que sea nuestro FS
+    if(SB1.numMagico != 100383438) {
+        printf("Este FS no es PotooooooooFS");
+        return -2;
+    }
+
     if(strlen(fileName)>MAX_NAME_LENGHT) return -2;
-    int inode;
-    if((inode = namei(fileName))==-1){
+
+    int inode = namei(fileName);
+
+    if(inode == -1){
         printf("File does not exist\n");
         return -1;
-    }else{
-        char bloque[BLOCK_SIZE];
-        memset(bloque, '\0', BLOCK_SIZE);
-
-        //Liberamos el inodo
-        bitmap_setbit(SB1.mapaINodos, inode, 0);
-
-        //Borramos el contenido del fichero y el inodo
-        for (int j = 0; j < 5; j++)
-        {
-            if(inode<MAX_FILES/2){
-                memset(SB1.inodos[inode].nombre, '\0', MAX_NAME_LENGHT+1);
-                if(SB1.inodos[inode].bloque[j]!=0){
-                    if (bwrite(DEVICE_IMAGE, SB1.inodos[inode].bloque[j], bloque) == -1){
-                        printf("Error bwrite\n");
-                        return -2;
-                    }
-                    bitmap_setbit(SB1.mapaBloques, SB1.inodos[inode].bloque[j], 0);
-                    SB1.inodos[inode].bloque[j] = 0;
-                }
-                SB1.inodos[inode].size = 0;
-                SB1.inodos[inode].crc = 0;
-            }else{
-                inode -= MAX_FILES/2;
-                memset(SB2.inodos[inode].nombre, '\0', MAX_NAME_LENGHT+1);
-                if(SB2.inodos[inode].bloque[j]!=0){
-                    if (bwrite(DEVICE_IMAGE, SB2.inodos[inode].bloque[j], bloque) == -1){
-                        printf("Error bwrite\n");
-                        return -2;
-                    }
-                    bitmap_setbit(SB1.mapaBloques, SB2.inodos[inode].bloque[j], 0);
-                    SB2.inodos[inode].bloque[j] = 0;
-                }
-                SB2.inodos[inode].size = 0;
-                SB2.inodos[inode].crc = 0;
-            }
-        }
-        return 0;
     }
-	return -2;
+
+    char bloque[BLOCK_SIZE];
+    memset(bloque, '\0', BLOCK_SIZE);
+
+    //Liberamos el inodo
+    bitmap_setbit(SB1.mapaINodos, inode, 0);
+
+    //Borramos el contenido del fichero y el inodo
+    for (int j = 0; j < 5; j++)
+    {
+        if(inode<MAX_FILES/2){
+            memset(SB1.inodos[inode].nombre, '\0', MAX_NAME_LENGHT+1);
+            if(SB1.inodos[inode].bloque[j]!=0){
+                if (bwrite(DEVICE_IMAGE, SB1.inodos[inode].bloque[j], bloque) == -1){
+                    printf("Error bwrite\n");
+                    return -2;
+                }
+                bitmap_setbit(SB1.mapaBloques, SB1.inodos[inode].bloque[j], 0);
+                SB1.inodos[inode].bloque[j] = 0;
+            }
+            SB1.inodos[inode].size = 0;
+            SB1.inodos[inode].crc = 0;
+        }else{
+            inode -= MAX_FILES/2;
+            memset(SB2.inodos[inode].nombre, '\0', MAX_NAME_LENGHT+1);
+            if(SB2.inodos[inode].bloque[j]!=0){
+                if (bwrite(DEVICE_IMAGE, SB2.inodos[inode].bloque[j], bloque) == -1){
+                    printf("Error bwrite\n");
+                    return -2;
+                }
+                bitmap_setbit(SB1.mapaBloques, SB2.inodos[inode].bloque[j], 0);
+                SB2.inodos[inode].bloque[j] = 0;
+            }
+            SB2.inodos[inode].size = 0;
+            SB2.inodos[inode].crc = 0;
+        }
+    }
+	return 0;
 }
 
 /*
@@ -213,10 +236,18 @@ int removeFile(char *fileName)
  */
 int openFile(char *fileName)
 {
-    int fd=0;
-    fd = namei(fileName);
 
-    if(fd==-1){
+    //Comprobamos que sea nuestro FS
+    if(SB1.numMagico != 100383438) {
+        printf("Este FS no es PotooooooooFS");
+        return -2;
+    }
+
+    if(strlen(fileName) > MAX_NAME_LENGHT) return -2;
+
+    int fd = namei(fileName);
+
+    if(fd == -1){
         printf("File does not exist\n");
         return -1;
     }
@@ -227,7 +258,7 @@ int openFile(char *fileName)
     Inodos[fd].integridad=0;
 
     //Si es un blando hacemos la traduccion
-    if(SB1.inodos[fd].tipo == 1 || SB2.inodos[fd-24].tipo == 1){
+    if(SB1.inodos[fd].tipo == 1 || SB2.inodos[fd-MAX_FILES/2].tipo == 1){
         Inodos[fd].estado=0;
 
         if(fd < MAX_FILES/2) fd = bi(SB1.inodos[fd].bloque[0]);
@@ -251,12 +282,14 @@ int openFile(char *fileName)
  */
 int closeFile(int fileDescriptor)
 {
-    if(fileDescriptor < 0 || fileDescriptor > MAX_FILES){
-        return -1; //el fichero no existe
-    }
-    if(Inodos[fileDescriptor].estado==0){
+
+    //Comprobamos que sea nuestro FS
+    if(SB1.numMagico != 100383438) {
+        printf("Este FS no es PotooooooooFS");
         return -1;
     }
+
+    if(fileDescriptor < 0 || fileDescriptor > MAX_FILES || Inodos[fileDescriptor].estado==0) return -1;
     
     if (Inodos[fileDescriptor].integridad == 1) {
         printf("NF11: You can't close a file opened using openFileIntegrity using closeFile");
@@ -275,72 +308,68 @@ int closeFile(int fileDescriptor)
  */
 int readFile(int fileDescriptor, void *buffer, int numBytes)
 {
-    char buff[MAX_FILE_SIZE];
-    int b_id;
-    if(fileDescriptor<0 || fileDescriptor>47){
-        return -1;
-    }
-    if(numBytes<0){
+
+    //Comprobamos que sea nuestro FS
+    if(SB1.numMagico != 100383438) {
+        printf("Este FS no es PotooooooooFS");
         return -1;
     }
 
-    if(fileDescriptor < MAX_FILES/2){
-        //se comprueba que el fichero este abierto
-        if(Inodos[fileDescriptor].estado == 1){
+    //Comprobacion de parametros
+    if(fileDescriptor < 0 || fileDescriptor > MAX_FILES-1 || numBytes < 0) return -1;
+
+    //se comprueba que el fichero este abierto
+    if(Inodos[fileDescriptor].estado == 1){
+        
+        char buff[MAX_FILE_SIZE];
+        int b_id;
+
+        if(fileDescriptor < MAX_FILES/2){
+        
             //se lee lo justo, sino se lee hasta el maximo posible
             if(Inodos[fileDescriptor].posPuntero + numBytes > SB1.inodos[fileDescriptor].size){
                 numBytes = SB1.inodos[fileDescriptor].size - Inodos[fileDescriptor].posPuntero;
             }
             if(numBytes <= 0) return 0;
 
-            //b_id = bmap(fileDescriptor, Inodos[fileDescriptor].posPuntero);
             int contador=0;
-            for(int j=0;j<5;j++){
-                if(SB1.inodos[fileDescriptor].bloque[j]!=0){
-                    contador++;
-                }
-            }
+            for(int j=0;j<5;j++) if(SB1.inodos[fileDescriptor].bloque[j]!=0) contador++;
+            
             int temporal=0;
             for(int i=0; i<contador;i++){
-                b_id=bmap(fileDescriptor, temporal);
+                b_id = bmap(fileDescriptor, temporal);
                 bread(DEVICE_IMAGE, b_id, &buff[temporal]);
-                temporal+=2048;
+                temporal += BLOCK_SIZE;
             }
             memmove(buffer, (void *) buff, numBytes);
             
             
-            Inodos[fileDescriptor].posPuntero+= numBytes;
+            Inodos[fileDescriptor].posPuntero += numBytes;
             return numBytes;
-        }
-        
-    }else{
-        //se comprueba que el fichero este abierto
-        if(Inodos[fileDescriptor].estado==1){
-            if(Inodos[fileDescriptor].posPuntero+numBytes > SB2.inodos[fileDescriptor].size){
-                numBytes = SB2.inodos[fileDescriptor].size - Inodos[fileDescriptor].posPuntero;
+
+        }else{
+
+            if(Inodos[fileDescriptor].posPuntero+numBytes > SB2.inodos[fileDescriptor-MAX_FILES/2].size){
+                numBytes = SB2.inodos[fileDescriptor-MAX_FILES/2].size - Inodos[fileDescriptor].posPuntero;
             }
             if(numBytes <= 0){
                 return 0;
             }
+            
             int contador=0;
-            for(int j=0;j<5;j++){
-                if(SB1.inodos[fileDescriptor].bloque[j]!=0){
-                    contador++;
-                }
-            }
+            for(int j=0;j<5;j++) if(SB2.inodos[fileDescriptor-MAX_FILES/2].bloque[j]!=0) contador++;
+
             int temporal=0;
             for(int i=0; i<contador;i++){
-                b_id=bmap(fileDescriptor, temporal);
+                b_id = bmap(fileDescriptor, temporal);
                 bread(DEVICE_IMAGE, b_id, &buff[temporal]);
-                temporal+=2048;
+                temporal += BLOCK_SIZE;
             }
             memmove(buffer, (void *) buff, numBytes);
-            Inodos[fileDescriptor].posPuntero+= numBytes;
+            Inodos[fileDescriptor].posPuntero += numBytes;
             return numBytes;
-        }
-        
+        } 
     }
-
 	return -1;
 }
 
@@ -350,17 +379,22 @@ int readFile(int fileDescriptor, void *buffer, int numBytes)
  */
 int writeFile(int fileDescriptor, void *buffer, int numBytes)
 {
-    char buff[BLOCK_SIZE];
-    int b_id;
-    if(fileDescriptor<0 || fileDescriptor>MAX_FILES-1){
+
+    //Comprobamos que sea nuestro FS
+    if(SB1.numMagico != 100383438) {
+        printf("Este FS no es PotooooooooFS");
         return -1;
     }
-    if(numBytes<0){
+
+    if(fileDescriptor<0 || fileDescriptor>MAX_FILES-1 || numBytes<0){
         return -1;
     }
     
     //se comprueba que el fichero este abierto
     if(Inodos[fileDescriptor].estado==1){
+        
+        char buff[BLOCK_SIZE];
+        int b_id;
 
         if(Inodos[fileDescriptor].posPuntero==BLOCK_SIZE -1 || Inodos[fileDescriptor].posPuntero==BLOCK_SIZE*2 -1 || \
           Inodos[fileDescriptor].posPuntero==BLOCK_SIZE*3 - 1 || Inodos[fileDescriptor].posPuntero==BLOCK_SIZE*4 - 1 ){
@@ -387,8 +421,7 @@ int writeFile(int fileDescriptor, void *buffer, int numBytes)
             memmove(buff, (void *) buffer, numBytes);
             bwrite(DEVICE_IMAGE, b_id,buff);
             Inodos[fileDescriptor].posPuntero+= numBytes;
-            fileDescriptor -= MAX_FILES/2;
-            SB2.inodos[fileDescriptor].size+= numBytes;
+            SB2.inodos[fileDescriptor-MAX_FILES/2].size+= numBytes;
             return numBytes;
         }
     }
@@ -402,14 +435,14 @@ int writeFile(int fileDescriptor, void *buffer, int numBytes)
 int lseekFile(int fileDescriptor, long offset, int whence)
 {
     //Comprobar que el fichero existe
-    if(fileDescriptor < 0){
+    if(fileDescriptor < 0 || fileDescriptor > MAX_FILES-1){
         printf("File does not exists\n");
         return -1;
     }
     if(fileDescriptor < MAX_FILES/2 && strcmp(SB1.inodos[fileDescriptor].nombre,"")==0){
         printf("File does not exist\n");
         return -1;
-    }else if(fileDescriptor > MAX_FILES/2 && strcmp(SB2.inodos[fileDescriptor].nombre,"")==0){
+    }else if(fileDescriptor > MAX_FILES/2 && strcmp(SB2.inodos[fileDescriptor-MAX_FILES/2].nombre,"")==0){
         printf("File does not exist\n");
         return -1;
     }
@@ -437,6 +470,13 @@ int lseekFile(int fileDescriptor, long offset, int whence)
  */
 int checkFile (char * fileName)
 {
+
+    //Comprobamos que sea nuestro FS
+    if(SB1.numMagico != 100383438) {
+        printf("Este FS no es PotooooooooFS");
+        return -2;
+    }
+
     int inodo = 0;
     inodo = namei(fileName);
     
@@ -464,12 +504,11 @@ int checkFile (char * fileName)
             return -1;
         }
     } else {
-        inodo -= MAX_FILES/2;
-        unsigned char buffer[SB2.inodos[inodo].size];
-        readFile(inodo, buffer, SB2.inodos[inodo].size);
-        uint32_t val = CRC32(buffer, SB2.inodos[inodo].size);
+        unsigned char buffer[SB2.inodos[inodo-MAX_FILES/2].size];
+        readFile(inodo, buffer, SB2.inodos[inodo-MAX_FILES/2].size);
+        uint32_t val = CRC32(buffer, SB2.inodos[inodo-MAX_FILES/2].size);
         
-        if (SB2.inodos[inodo].crc == val) {
+        if (SB2.inodos[inodo-MAX_FILES/2].crc == val) {
             Inodos[inodo].posPuntero=pos;
             return 0;
         } else {
@@ -488,6 +527,13 @@ int checkFile (char * fileName)
 
 int includeIntegrity (char * fileName)
 {
+
+    //Comprobamos que sea nuestro FS
+    if(SB1.numMagico != 100383438) {
+        printf("Este FS no es PotooooooooFS");
+        return -2;
+    }
+
     int inodo = 0;
     inodo = namei(fileName);
     
@@ -511,11 +557,10 @@ int includeIntegrity (char * fileName)
         Inodos[inodo].posPuntero=pos;
         return 0;
     } else {
-        inodo -= MAX_FILES/2;
-        unsigned char buffer[SB2.inodos[inodo].size];
-        readFile(inodo, buffer, SB2.inodos[inodo].size);
-        uint32_t val = CRC32(buffer, SB2.inodos[inodo].size);
-        SB2.inodos[inodo].crc = val;
+        unsigned char buffer[SB2.inodos[inodo-MAX_FILES/2].size];
+        readFile(inodo, buffer, SB2.inodos[inodo-MAX_FILES/2].size);
+        uint32_t val = CRC32(buffer, SB2.inodos[inodo-MAX_FILES/2].size);
+        SB2.inodos[inodo-MAX_FILES/2].crc = val;
         
         Inodos[inodo].posPuntero=pos;
         return 0;
@@ -530,44 +575,47 @@ int includeIntegrity (char * fileName)
  */
 int openFileIntegrity(char *fileName)
 {    
-    int open = openFile(fileName);
-    if (open == -1) {
-        return -1;
-    } else if (open == -2) {
+
+    //Comprobamos que sea nuestro FS
+    if(SB1.numMagico != 100383438) {
+        printf("Este FS no es PotooooooooFS");
         return -3;
-    } else {
-        if (open < MAX_FILES/2) {
-            if (SB1.inodos[open].crc == 0) {
-                printf("NF10: This file doesn't have a CRC");
-                closeFile(open);
-                return -3;
-            } else {
-                int check = checkFile(fileName);
-                if (check == -2) {
-                    return -1;
-                } else if (check == -1) {
-                    return -2;
-                } else {
-                    Inodos[open].integridad=1;  //NF12
-                    return 0;
-                }
-            }
+    }
+
+    int open = openFile(fileName);
+
+    if (open == -1) return -1;
+    else if (open == -2) return -3;
+
+    if (open < MAX_FILES/2) {
+        if (SB1.inodos[open].crc == 0) {
+            printf("NF10: This file doesn't have a CRC");
+            closeFile(open);
+            return -3;
         } else {
-            int fd = open - MAX_FILES/2;
-            if (SB2.inodos[fd].crc == 0) {
-                printf("NF10: This file doesn't have a CRC");
-                closeFile(fd);
-                return -3;
-            } else {
-                int check = checkFile(fileName);
-                if (check == -2) {
-                    return -1;
-                } else if (check == -1) {
-                    return -2;
-                } else {
-                    Inodos[open].integridad=1;  //NF12
-                    return 0;
-                }
+            int check = checkFile(fileName);
+
+            if (check == -2) return -1;
+            else if (check == -1) return -2;
+            else {
+                Inodos[open].integridad=1;  //NF12
+                return 0;
+            }
+        }
+    } else {
+        int fd = open - MAX_FILES/2;
+        if (SB2.inodos[fd].crc == 0) {
+            printf("NF10: This file doesn't have a CRC");
+            closeFile(fd);
+            return -3;
+        } else {
+            int check = checkFile(fileName);
+
+            if (check == -2) return -1;
+            else if (check == -1) return -2;
+            else {
+                Inodos[open].integridad=1;  //NF12
+                return 0;
             }
         }
     }
@@ -579,9 +627,14 @@ int openFileIntegrity(char *fileName)
  */
 int closeFileIntegrity(int fileDescriptor)
 {
-    if(fileDescriptor < 0 || fileDescriptor > MAX_FILES){
-        return -1; //el fichero no existe
+
+    //Comprobamos que sea nuestro FS
+    if(SB1.numMagico != 100383438) {
+        printf("Este FS no es PotooooooooFS");
+        return -1;
     }
+
+    if(fileDescriptor < 0 || fileDescriptor > MAX_FILES) return -1;
     
     if (Inodos[fileDescriptor].integridad == 0) {
         printf("NF12: You can't close a file opened using openFile using closeFileIntegrity");
@@ -596,8 +649,7 @@ int closeFileIntegrity(int fileDescriptor)
             return 0;
         }
     } else {
-        fileDescriptor -= MAX_FILES/2;
-        if(includeIntegrity(SB2.inodos[fileDescriptor].nombre) == 0){
+        if(includeIntegrity(SB2.inodos[fileDescriptor-MAX_FILES/2].nombre) == 0){
             Inodos[fileDescriptor].estado=0;
             Inodos[fileDescriptor].posPuntero=0;
 
@@ -614,53 +666,59 @@ int closeFileIntegrity(int fileDescriptor)
  */
 int createLn(char *fileName, char *linkName)
 {
+
+    //Comprobamos que sea nuestro FS
+    if(SB1.numMagico != 100383438) {
+        printf("Este FS no es PotooooooooFS");
+        return -2;
+    }
+
+    if(strlen(fileName) > MAX_NAME_LENGHT || strlen(linkName) > MAX_NAME_LENGHT) return -2;
+
     int inodo;
-    if(namei(linkName)!=-1){
+    if(namei(linkName) != -1){
         printf("Symbolic link already exists\n");
         return -1;
     }
     if((inodo = namei(fileName))==-1){
         printf("File does not exist\n");
         return -1;
+    }
+    int i;
+
+    //Buscamos un inodo libre
+    for(i = 0; i < MAX_FILES; i++) {
+        if(bitmap_getbit(SB1.mapaINodos, i)==0){
+            bitmap_setbit(SB1.mapaINodos, i, 1);
+            break;
+        }
+    }
+    //Si no hay ninguno
+    if(i==MAX_FILES) return -2;
+
+    //Asignacion en el inodo
+    if(i<MAX_FILES/2){
+        SB1.inodos[i].size=0;
+        SB1.inodos[i].tipo=1;   //Es simbolico
+        strcpy(SB1.inodos[i].nombre, linkName);
+        if(inodo<MAX_FILES/2) SB1.inodos[i].bloque[0] = SB1.inodos[inodo].bloque[0];
+        else{
+            inodo -= MAX_FILES/2;
+            SB1.inodos[i].bloque[0] = SB2.inodos[inodo].bloque[0];
+        }
+        return 0;
     }else{
-        int i;
+        i -= MAX_FILES/2;
 
-        //Buscamos un inodo libre
-        for(i = 0; i < MAX_FILES; i++) {
-            if(bitmap_getbit(SB1.mapaINodos, i)==0){
-                bitmap_setbit(SB1.mapaINodos, i, 1);
-                break;
-            }
+        SB2.inodos[i].size=0;
+        SB2.inodos[i].tipo=1;   //Es simbolico
+        strcpy(SB2.inodos[i].nombre, linkName);
+        if(inodo<MAX_FILES/2) SB2.inodos[i].bloque[0] = SB1.inodos[inodo].bloque[0];
+        else{
+            inodo -= MAX_FILES/2;
+            SB2.inodos[i].bloque[0] = SB2.inodos[inodo].bloque[0];
         }
-        //Si no hay ninguno
-        if(i==MAX_FILES){
-            return -2;
-        }
-
-        //Asignacion en el inodo
-        if(i<MAX_FILES/2){
-            SB1.inodos[i].size=0;
-            SB1.inodos[i].tipo=1;   //Es simbolico
-            strcpy(SB1.inodos[i].nombre, linkName);
-            if(inodo<MAX_FILES/2) SB1.inodos[i].bloque[0] = SB1.inodos[inodo].bloque[0];
-            else{
-                inodo -= MAX_FILES/2;
-                SB1.inodos[i].bloque[0] = SB2.inodos[inodo].bloque[0];
-            }
-            return 0;
-        }else{
-            i -= MAX_FILES/2;
-
-            SB2.inodos[i].size=0;
-            SB2.inodos[i].tipo=1;   //Es simbolico
-            strcpy(SB2.inodos[i].nombre, linkName);
-            if(inodo<MAX_FILES/2) SB2.inodos[i].bloque[0] = SB1.inodos[inodo].bloque[0];
-            else{
-                inodo -= MAX_FILES/2;
-                SB2.inodos[i].bloque[0] = SB2.inodos[inodo].bloque[0];
-            }
-            return 0;
-        }
+        return 0;
     }
 	return -2;
 }
@@ -671,6 +729,15 @@ int createLn(char *fileName, char *linkName)
  */
 int removeLn(char *linkName)
 {
+
+    //Comprobamos que sea nuestro FS
+    if(SB1.numMagico != 100383438) {
+        printf("Este FS no es PotooooooooFS");
+        return -2;
+    }
+
+    if(strlen(linkName) > MAX_NAME_LENGHT) return -2;
+
     //Cogemos el inodo
     int inodo = namei(linkName);
     
@@ -705,6 +772,9 @@ int removeLn(char *linkName)
  */
 int namei(char *file_name)
 {
+
+    if(strlen(file_name) > MAX_NAME_LENGHT) return -2;
+
     for (int i = 0; i < MAX_FILES/2; i++)
     {
         if(strcmp(SB1.inodos[i].nombre, file_name)==0) return i;
