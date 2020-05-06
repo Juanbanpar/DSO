@@ -323,50 +323,151 @@ int readFile(int fileDescriptor, void *buffer, int numBytes)
         
         char buff[MAX_FILE_SIZE];
         int b_id;
+        
+        //Numero de bloques a leer
+        int bq = numBytes/BLOCK_SIZE;
+        int preBq = 0;
+        int postBq = 0;
+        int index = 0;
 
         if(fileDescriptor < MAX_FILES/2){
-        
-            //se lee lo justo, sino se lee hasta el maximo posible
+
+            //comprobamos que no se pase y le quede por leer
             if(Inodos[fileDescriptor].posPuntero + numBytes > SB1.inodos[fileDescriptor].size){
                 numBytes = SB1.inodos[fileDescriptor].size - Inodos[fileDescriptor].posPuntero;
+                if(numBytes <= 0) return 0;
             }
-            if(numBytes <= 0) return 0;
 
-            int contador=0;
-            for(int j=0;j<5;j++) if(SB1.inodos[fileDescriptor].bloque[j]!=0) contador++;
-            
-            int temporal=0;
-            for(int i=0; i<contador;i++){
-                b_id = bmap(fileDescriptor, temporal);
-                bread(DEVICE_IMAGE, b_id, &buff[temporal]);
-                temporal += BLOCK_SIZE;
+            //Si el puntero no está en el borde de un bloque hay que leer un poco antes de empezar a leer bloques enteros
+            if(Inodos[fileDescriptor].posPuntero != 0 || Inodos[fileDescriptor].posPuntero % (BLOCK_SIZE-1) != 0){
+                preBq = numBytes - bq;
+
+                //Si hay mas de un bloque significa que hay que leer un poco antes del bloque y un poco despues
+                if(preBq > BLOCK_SIZE){
+
+                    //Guardamos temporalmente el tamano anterior
+                    int aux = preBq;
+
+                    //Bloque en el que estamos
+                    int bqPointer = bmap(fileDescriptor, Inodos[fileDescriptor].posPuntero);
+                    preBq = BLOCK_SIZE*(bqPointer+1)-1 - Inodos[fileDescriptor].posPuntero; //Lo que queda hasta el final de este bloque
+                    
+                    //Lo que sobra
+                    postBq = aux - preBq;
+                }else postBq = numBytes - bq;
             }
+
+            if(preBq > 0){
+                
+                //Tenemos que hacer la lectura a mano
+                customRead(fileDescriptor, buff, index, preBq);
+
+                index += preBq;
+            }
+            
+            if(bq > 0){
+
+                //En que bloque estamos
+                b_id = bmap(fileDescriptor, Inodos[fileDescriptor].posPuntero);
+
+                //Hallamos el indice de bloque del inodo en el que se encuentra el bloque actual
+                for(int i=0; i<5;i++){
+                    if(SB1.inodos[fileDescriptor].bloque[i] == b_id){
+                        b_id = i;
+                        break;
+                    }
+                }
+                
+                for(int i=0; i<bq;i++){
+
+                    //Leemos el bloque
+                    bread(DEVICE_IMAGE, SB1.inodos[fileDescriptor].bloque[b_id], &buff[index]);
+
+                    //Actualizamos las varibales
+                    b_id++;
+                    Inodos[fileDescriptor].posPuntero += BLOCK_SIZE;
+                    index += BLOCK_SIZE;
+                }
+            }
+
+            if(postBq > 0){
+                //Tenemos que hacer la lectura a mano
+                customRead(fileDescriptor, buff, index, postBq);
+
+                index += postBq;
+            }
+            
             memmove(buffer, (void *) buff, numBytes);
-            
-            
-            Inodos[fileDescriptor].posPuntero += numBytes;
             return numBytes;
 
         }else{
 
+            //comprobamos que no se pase y le quede por leer
             if(Inodos[fileDescriptor].posPuntero+numBytes > SB2.inodos[fileDescriptor-MAX_FILES/2].size){
                 numBytes = SB2.inodos[fileDescriptor-MAX_FILES/2].size - Inodos[fileDescriptor].posPuntero;
+                if(numBytes <= 0) return 0;
             }
-            if(numBytes <= 0){
-                return 0;
+
+            //Si el puntero no está en el borde de un bloque hay que leer un poco antes de empezar a leer bloques enteros
+            if(Inodos[fileDescriptor].posPuntero != 0 || Inodos[fileDescriptor].posPuntero % (BLOCK_SIZE-1) != 0){
+                preBq = numBytes - bq;
+
+                //Si hay mas de un bloque significa que hay que leer un poco antes del bloque y un poco despues
+                if(preBq > BLOCK_SIZE){
+
+                    //Guardamos temporalmente el tamano anterior
+                    int aux = preBq;
+
+                    //Bloque en el que estamos
+                    int bqPointer = bmap(fileDescriptor, Inodos[fileDescriptor].posPuntero);
+                    preBq = BLOCK_SIZE*(bqPointer+1)-1 - Inodos[fileDescriptor].posPuntero; //Lo que queda hasta el final de este bloque
+                    
+                    //Lo que sobra
+                    postBq = aux - preBq;
+                }else postBq = numBytes - bq;
+            }
+
+            if(preBq > 0){
+                
+                //Tenemos que hacer la lectura a mano
+                customRead(fileDescriptor, buff, index, preBq);
+
+                index += preBq;
             }
             
-            int contador=0;
-            for(int j=0;j<5;j++) if(SB2.inodos[fileDescriptor-MAX_FILES/2].bloque[j]!=0) contador++;
+            if(bq > 0){
 
-            int temporal=0;
-            for(int i=0; i<contador;i++){
-                b_id = bmap(fileDescriptor, temporal);
-                bread(DEVICE_IMAGE, b_id, &buff[temporal]);
-                temporal += BLOCK_SIZE;
+                //En que bloque estamos
+                b_id = bmap(fileDescriptor, Inodos[fileDescriptor].posPuntero);
+
+                //Hallamos el indice de bloque del inodo en el que se encuentra el bloque actual
+                for(int i=0; i<5;i++){
+                    if(SB2.inodos[fileDescriptor-MAX_FILES/2].bloque[i] == b_id){
+                        b_id = i;
+                        break;
+                    }
+                }
+                
+                for(int i=0; i<bq;i++){
+
+                    //Leemos el bloque
+                    bread(DEVICE_IMAGE, SB2.inodos[fileDescriptor-MAX_FILES/2].bloque[b_id], &buff[index]);
+
+                    //Actualizamos las varibales
+                    b_id++;
+                    Inodos[fileDescriptor].posPuntero += BLOCK_SIZE;
+                    index += BLOCK_SIZE;
+                }
             }
+
+            if(postBq > 0){
+                //Tenemos que hacer la lectura a mano
+                customRead(fileDescriptor, buff, index, postBq);
+
+                index += postBq;
+            }
+            
             memmove(buffer, (void *) buff, numBytes);
-            Inodos[fileDescriptor].posPuntero += numBytes;
             return numBytes;
         } 
     }
@@ -919,4 +1020,25 @@ int bmap(int i, int pos){
     }
     if(bloquepuntero==0) return -1; //el fichero no tiene nada
     return bloquepuntero;
+}
+
+/*
+ * Reads the number oh bytes you wish
+ * Returns 0 or -1 in case of error, including short
+ * read.
+ */
+int customRead(int fileDescriptor, char *buffer, int index, int size) {
+	
+    //Abrimos disk.dat
+    int fd = open(DEVICE_IMAGE, O_RDONLY);
+    if(fd < 0) return -1;
+
+    //Movemos el puntero a donde estamos
+	lseek(fd, Inodos[fileDescriptor].posPuntero, SEEK_SET);
+
+    //Leemos el tamano que queremos y lo dejamos en el buffer
+	read(fd, &buffer[index], size);
+
+	close(fd);
+	return 0;
 }
