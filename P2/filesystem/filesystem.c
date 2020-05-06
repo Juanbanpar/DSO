@@ -542,7 +542,7 @@ int writeFile(int fileDescriptor, void *buffer, int numBytes)
                 
                 for(i=b_id; i<bq;i++){
 
-                    memmove(buff + (i*BLOCK_SIZE), (void *) buffer + index, BLOCK_SIZE);
+                    memmove(buff + index, (void *) buffer + index, BLOCK_SIZE);
                     bwrite(DEVICE_IMAGE, bmap(fileDescriptor, Inodos[fileDescriptor].posPuntero), buff + index);
 
                     //Actualizamos las varibales
@@ -554,9 +554,9 @@ int writeFile(int fileDescriptor, void *buffer, int numBytes)
             if(postBq > 0){
 
                 //leemos lo que hay en el resto del bloque, unimos con lo nuestro y escribimos el bloque
-                bread(DEVICE_IMAGE, bmap(fileDescriptor, Inodos[fileDescriptor].posPuntero), buff + (i*BLOCK_SIZE));
-                memmove(buff + (i*BLOCK_SIZE) + Inodos[fileDescriptor].posPuntero%BLOCK_SIZE, (void *) buffer + index, postBq);
-                bwrite(DEVICE_IMAGE, bmap(fileDescriptor, Inodos[fileDescriptor].posPuntero), buff + (i*BLOCK_SIZE));
+                bread(DEVICE_IMAGE, bmap(fileDescriptor, Inodos[fileDescriptor].posPuntero), buff + index);
+                memmove(buff + index, (void *) buffer + index, postBq);
+                bwrite(DEVICE_IMAGE, bmap(fileDescriptor, Inodos[fileDescriptor].posPuntero), buff + index);
                     
                 Inodos[fileDescriptor].posPuntero += postBq;
                 index += postBq;
