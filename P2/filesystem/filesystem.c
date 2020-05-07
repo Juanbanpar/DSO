@@ -486,7 +486,6 @@ int writeFile(int fileDescriptor, void *buffer, int numBytes)
     if(Inodos[fileDescriptor].estado == 1){
         
         char buff[MAX_FILE_SIZE];
-        memset(buff, '\0',  MAX_FILE_SIZE);
         int b_id;
 
         //Numero de bloques a leer
@@ -516,10 +515,12 @@ int writeFile(int fileDescriptor, void *buffer, int numBytes)
 
         if(preBq > 0){
 
+            b_id = bmap(fileDescriptor, Inodos[fileDescriptor].posPuntero);
+
             //leemos lo que hay en el resto del bloque, unimos con lo nuestro y escribimos el bloque
-            bread(DEVICE_IMAGE, bmap(fileDescriptor, Inodos[fileDescriptor].posPuntero), buff);
+            bread(DEVICE_IMAGE, b_id, buff);
             memmove(buff + Inodos[fileDescriptor].posPuntero%BLOCK_SIZE, (void *) buffer + index, preBq);
-            bwrite(DEVICE_IMAGE, bmap(fileDescriptor, Inodos[fileDescriptor].posPuntero), buff);
+            bwrite(DEVICE_IMAGE, b_id, buff);
 
             Inodos[fileDescriptor].posPuntero += preBq;
             SB1.inodos[fileDescriptor].size += preBq;
@@ -528,21 +529,8 @@ int writeFile(int fileDescriptor, void *buffer, int numBytes)
 
         if(fileDescriptor < MAX_FILES/2){
 
-            int i;            
             if(bq > 0){
-
-                //En que bloque estamos
-                b_id = bmap(fileDescriptor, Inodos[fileDescriptor].posPuntero);
-
-                //Hallamos el indice de bloque del inodo en el que se encuentra el bloque actual
-                for(int i=0; i<5;i++){
-                    if(SB1.inodos[fileDescriptor].bloque[i] == b_id){
-                        b_id = i;
-                        break;
-                    }
-                }
-                
-                for(i=b_id; i<bq;i++){
+                for(int i=0; i<bq;i++){
 
                     memmove(buff + index, (void *) buffer + index, BLOCK_SIZE);
                     bwrite(DEVICE_IMAGE, bmap(fileDescriptor, Inodos[fileDescriptor].posPuntero), buff + index);
@@ -556,58 +544,45 @@ int writeFile(int fileDescriptor, void *buffer, int numBytes)
 
             if(postBq > 0){
 
+                b_id = bmap(fileDescriptor, Inodos[fileDescriptor].posPuntero);
+
                 //leemos lo que hay en el resto del bloque, unimos con lo nuestro y escribimos el bloque
-                bread(DEVICE_IMAGE, bmap(fileDescriptor, Inodos[fileDescriptor].posPuntero), buff + index);
                 memmove(buff + index, (void *) buffer + index, postBq);
-                bwrite(DEVICE_IMAGE, bmap(fileDescriptor, Inodos[fileDescriptor].posPuntero), buff + index);
+                bwrite(DEVICE_IMAGE, b_id, buff + index);
                     
                 Inodos[fileDescriptor].posPuntero += postBq;
-                if(SB1.inodos[fileDescriptor].size != 0) SB1.inodos[fileDescriptor].size += postBq;
-                // else SB1.inodos[fileDescriptor].size = postBq;
+                SB1.inodos[fileDescriptor].size += postBq;
                 index += postBq;
             }
             return numBytes;
 
         }else{
-            
-            int i;            
             if(bq > 0){
-
-                //En que bloque estamos
-                b_id = bmap(fileDescriptor, Inodos[fileDescriptor].posPuntero);
-
-                //Hallamos el indice de bloque del inodo en el que se encuentra el bloque actual
-                for(int i=0; i<5;i++){
-                    if(SB2.inodos[fileDescriptor-MAX_FILES/2].bloque[i] == b_id){
-                        b_id = i;
-                        break;
-                    }
-                }
-                
-                for(i=b_id; i<bq;i++){
+                for(int i=0; i<bq;i++){
 
                     memmove(buff + index, (void *) buffer + index, BLOCK_SIZE);
                     bwrite(DEVICE_IMAGE, bmap(fileDescriptor, Inodos[fileDescriptor].posPuntero), buff + index);
 
                     //Actualizamos las varibales
                     Inodos[fileDescriptor].posPuntero += BLOCK_SIZE;
+                    SB2.inodos[fileDescriptor-MAX_FILES].size += BLOCK_SIZE;
                     index += BLOCK_SIZE;
                 }
             }
 
             if(postBq > 0){
 
+                b_id = bmap(fileDescriptor, Inodos[fileDescriptor].posPuntero);
+
                 //leemos lo que hay en el resto del bloque, unimos con lo nuestro y escribimos el bloque
-                bread(DEVICE_IMAGE, bmap(fileDescriptor, Inodos[fileDescriptor].posPuntero), buff + index);
                 memmove(buff + index, (void *) buffer + index, postBq);
-                bwrite(DEVICE_IMAGE, bmap(fileDescriptor, Inodos[fileDescriptor].posPuntero), buff + index);
+                bwrite(DEVICE_IMAGE, b_id, buff + index);
                     
                 Inodos[fileDescriptor].posPuntero += postBq;
+                SB2.inodos[fileDescriptor-MAX_FILES/2].size += postBq;
                 index += postBq;
             }
-            
-            SB2.inodos[fileDescriptor-MAX_FILES/2].size += numBytes;
-            return numBytes;
+            return numBytes;            
         } 
     }
 	return -1;
@@ -998,106 +973,26 @@ int bi(int block)
 int bmap(int i, int pos){
     int bloquepuntero = 0;
     if(i < MAX_FILES/2){
-        if(pos <= BLOCK_SIZE-1) bloquepuntero = SB1.inodos[i].bloque[0];
-        else if(pos <= (BLOCK_SIZE*2)-1 && pos >= BLOCK_SIZE-1){
-            if((bloquepuntero = SB1.inodos[i].bloque[1])==0){
-                
-                //Buscamos un bloque libre
-                for(int h = 2 ; h < SB1.diskSize/BLOCK_SIZE ; h++){ //Los dos bloques de SB
-                    if(bitmap_getbit(SB1.mapaBloques, h)==0){
-                        bitmap_setbit(SB1.mapaBloques, h, 1);
-                        bloquepuntero = h;
-                        SB1.inodos[i].bloque[1]= bloquepuntero;
-                        break;
-                    }
-                }
-            }
-        }else if(pos <= (BLOCK_SIZE*3)-1 && pos >= (BLOCK_SIZE*2)-1){
-            if((bloquepuntero = SB1.inodos[i].bloque[2])==0){
-                //Buscamos un bloque libre
-                for(int h = 2 ; h < SB1.diskSize/BLOCK_SIZE ; h++){
-                    if(bitmap_getbit(SB1.mapaBloques, h)==0){
-                        bitmap_setbit(SB1.mapaBloques, h, 1);
-                        bloquepuntero = h;
-                        SB1.inodos[i].bloque[2]= bloquepuntero;
-                        break;
-                    }
-                }
-            }
-        }else if(pos <= (BLOCK_SIZE*4)-1 && pos >= (BLOCK_SIZE*3)-1){
-            if((bloquepuntero = SB1.inodos[i].bloque[3])==0){
-                //Buscamos un bloque libre
-                for(int h = 2 ; h < SB1.diskSize/BLOCK_SIZE ; h++){
-                    if(bitmap_getbit(SB1.mapaBloques, h)==0){
-                        bitmap_setbit(SB1.mapaBloques, h, 1);
-                        bloquepuntero = h;
-                        SB1.inodos[i].bloque[3]= bloquepuntero;
-                        break;
-                    }
-                }
-            }
-        }else if(pos <= (BLOCK_SIZE*5)-1 && pos >= (BLOCK_SIZE*4)-1){
-            if((bloquepuntero = SB1.inodos[i].bloque[4])==0){
-                //Buscamos un bloque libre
-                for(int h = 2 ; h < SB1.diskSize/BLOCK_SIZE ; h++){
-                    if(bitmap_getbit(SB1.mapaBloques, h)==0){
-                        bitmap_setbit(SB1.mapaBloques, h, 1);
-                        bloquepuntero = h;
-                        SB1.inodos[i].bloque[4]= bloquepuntero;
-                        break;
-                    }
+        if((bloquepuntero = SB1.inodos[i].bloque[pos / (BLOCK_SIZE-1)])==0){
+            //Buscamos un bloque libre
+            for(int h = 2 ; h < SB1.diskSize/BLOCK_SIZE ; h++){ //Los dos bloques de SB
+                if(bitmap_getbit(SB1.mapaBloques, h)==0){
+                    bitmap_setbit(SB1.mapaBloques, h, 1);
+                    bloquepuntero = h;
+                    SB1.inodos[i].bloque[pos / BLOCK_SIZE-1]= bloquepuntero;
+                    break;
                 }
             }
         }
     }else{
-        i -= MAX_FILES/2;
-        if(pos <= BLOCK_SIZE-1) bloquepuntero = SB2.inodos[i].bloque[0];
-        else if(pos <= (BLOCK_SIZE*2)-1 && pos >= BLOCK_SIZE-1){
-            if((bloquepuntero = SB2.inodos[i].bloque[1])==0){
-                //Buscamos un bloque libre
-                for(int h = 2 ; h < SB1.diskSize/BLOCK_SIZE ; h++){
-                    if(bitmap_getbit(SB1.mapaBloques, h)==0){
-                        bitmap_setbit(SB1.mapaBloques, h, 1);
-                        bloquepuntero = h;
-                        SB2.inodos[i].bloque[1]= bloquepuntero;
-                        break;
-                    }
-                }
-            }
-        }else if(pos <= (BLOCK_SIZE*3)-1 && pos >= (BLOCK_SIZE*2)-1){
-            if((bloquepuntero = SB2.inodos[i].bloque[2])==0){
-                //Buscamos un bloque libre
-                for(int h = 2 ; h < SB1.diskSize/BLOCK_SIZE ; h++){
-                    if(bitmap_getbit(SB1.mapaBloques, h)==0){
-                        bitmap_setbit(SB1.mapaBloques, h, 1);
-                        bloquepuntero = h;
-                        SB2.inodos[i].bloque[2]= bloquepuntero;
-                        break;
-                    }
-                }
-            }
-        }else if(pos <= (BLOCK_SIZE*4)-1 && pos >= (BLOCK_SIZE*3)-1){
-            if((bloquepuntero = SB2.inodos[i].bloque[3])==0){
-                //Buscamos un bloque libre
-                for(int h = 2 ; h < SB1.diskSize/BLOCK_SIZE ; h++){
-                    if(bitmap_getbit(SB1.mapaBloques, h)==0){
-                        bitmap_setbit(SB1.mapaBloques, h, 1);
-                        bloquepuntero = h;
-                        SB2.inodos[i].bloque[3]= bloquepuntero;
-                        break;
-                    }
-                }
-            }
-        }else if(pos <= (BLOCK_SIZE*5)-1 && pos >= (BLOCK_SIZE*4)-1){
-            if((bloquepuntero = SB2.inodos[i].bloque[4])==0){
-                //Buscamos un bloque libre
-                for(int h = 2 ; h < SB1.diskSize/BLOCK_SIZE ; h++){
-                    if(bitmap_getbit(SB1.mapaBloques, h)==0){
-                        bitmap_setbit(SB1.mapaBloques, h, 1);
-                        bloquepuntero = h;
-                        SB2.inodos[i].bloque[4]= bloquepuntero;
-                        break;
-                    }
+        if((bloquepuntero = SB2.inodos[i-MAX_FILES/2].bloque[pos / (BLOCK_SIZE-1)])==0){
+            //Buscamos un bloque libre
+            for(int h = 2 ; h < SB1.diskSize/BLOCK_SIZE ; h++){ //Los dos bloques de SB
+                if(bitmap_getbit(SB1.mapaBloques, h)==0){
+                    bitmap_setbit(SB1.mapaBloques, h, 1);
+                    bloquepuntero = h;
+                    SB2.inodos[i-MAX_FILES/2].bloque[pos / BLOCK_SIZE-1]= bloquepuntero;
+                    break;
                 }
             }
         }
@@ -1116,7 +1011,6 @@ int customRead(int fileDescriptor, char *buffer, int size) {
     //Abrimos disk.dat
     int fd = open(DEVICE_IMAGE, O_RDONLY);
     if(fd < 0) return -1;
-
 
     //Movemos el puntero a donde estamos
     int offset = bmap(fileDescriptor, Inodos[fileDescriptor].posPuntero) * BLOCK_SIZE + Inodos[fileDescriptor].posPuntero % BLOCK_SIZE;
