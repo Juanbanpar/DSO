@@ -308,8 +308,6 @@ int closeFile(int fileDescriptor)
 int readFile(int fileDescriptor, void *buffer, int numBytes)
 {
 
-    Inodos[fileDescriptor].posPuntero = 0;
-
     //Comprobamos que sea nuestro FS
     if(SB1.numMagico != 100383438) {
         printf("Este FS no es PotooooooooFS");
