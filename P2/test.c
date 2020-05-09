@@ -258,7 +258,76 @@ int main()
 		return -1;
 	}
 	fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST ID28 openFileIntegrity no CRC ", ANSI_COLOR_GREEN, "SUCCESS\n", ANSI_COLOR_RESET);
+    
+    ///////ID29
 
+    ret = createFile("/testIntegridad.txt");
+    fd = openFile("/testIntegridad.txt");
+    bufferIn = "hola";
+    writeFile(fd, bufferIn, strlen(bufferIn));
+	int integ = includeIntegrity("/testIntegridad.txt");
+	if (integ != 0)
+	{
+		fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST ID29 includeIntegrity ", ANSI_COLOR_RED, "FAILED\n", ANSI_COLOR_RESET);
+		return -1;
+	}
+	fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST ID29 includeIntegrity ", ANSI_COLOR_GREEN, "SUCCESS\n", ANSI_COLOR_RESET);
+    closeFile(fd);
+    
+    ///////ID30
+
+	fd = openFileIntegrity("/testIntegridad.txt");
+	if (fd != 2)
+	{
+		fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST ID30 openFileIntegrity ", ANSI_COLOR_RED, "FAILED\n", ANSI_COLOR_RESET);
+		return -1;
+	}
+	fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST ID30 openFileIntegrity ", ANSI_COLOR_GREEN, "SUCCESS\n", ANSI_COLOR_RESET);
+    
+    ///////ID31
+
+	integ = checkFile("/testIntegridad.txt");
+	if (integ != 0)
+	{
+		fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST ID31 checkFile ", ANSI_COLOR_RED, "FAILED\n", ANSI_COLOR_RESET);
+		return -1;
+	}
+	fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST ID31 checkFile ", ANSI_COLOR_GREEN, "SUCCESS\n", ANSI_COLOR_RESET);
+    
+    ///////ID32
+
+	integ = closeFileIntegrity(fd);
+	if (integ != 0)
+	{
+		fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST ID32 closeFileIntegrity ", ANSI_COLOR_RED, "FAILED\n", ANSI_COLOR_RESET);
+		return -1;
+	}
+	fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST ID32 closeFileIntegrity ", ANSI_COLOR_GREEN, "SUCCESS\n", ANSI_COLOR_RESET);
+    
+    ///////ID33
+
+	fd = openFileIntegrity("/testIntegridad.txt");
+    ret = closeFile(fd);
+	if (ret == 0)
+	{
+		fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST ID33 closeFile after openFileIntegrity ", ANSI_COLOR_RED, "FAILED\n", ANSI_COLOR_RESET);
+		return -1;
+	}
+	fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST ID33 closeFile after openFileIntegrity ", ANSI_COLOR_GREEN, "SUCCESS\n", ANSI_COLOR_RESET);
+    closeFileIntegrity(fd);
+    
+    ///////ID34
+
+	fd = openFile("/test.txt");
+    ret = closeFileIntegrity(fd);
+	if (ret == 0)
+	{
+		fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST ID34 closeFileIntegrity after openFile ", ANSI_COLOR_RED, "FAILED\n", ANSI_COLOR_RESET);
+		return -1;
+	}
+	fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST ID34 closeFileIntegrity after openFile ", ANSI_COLOR_GREEN, "SUCCESS\n", ANSI_COLOR_RESET);
+    closeFile(fd);
+    
 	///////ID4
 
 	ret = unmountFS();

@@ -756,8 +756,9 @@ int openFileIntegrity(char *fileName)
             if (check == -2) return -1;
             else if (check == -1) return -2;
             else {
+                printf("%d", open);
                 Inodos[open].integridad=1;  //NF12
-                return 0;
+                return open;
             }
         }
     } else {
@@ -773,7 +774,7 @@ int openFileIntegrity(char *fileName)
             else if (check == -1) return -2;
             else {
                 Inodos[open].integridad=1;  //NF12
-                return 0;
+                return open;
             }
         }
     }
