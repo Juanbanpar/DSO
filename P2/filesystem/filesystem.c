@@ -842,6 +842,18 @@ int createLn(char *fileName, char *linkName)
         printf("File does not exist\n");
         return -1;
     }
+    
+    //Comprobamos si el archivo a enlazar es un enlace, en caso afirmativo no se deja crear para evitar ciclos
+    if (inodo < MAX_FILES/2) {
+        if(SB1.inodos[inodo].tipo==1) {
+            return -2;
+        }
+    } else {
+        if(SB2.inodos[inodo-MAX_FILES/2].tipo==1) {
+            return -2;
+        }
+    }
+    
     int i;
 
     //Buscamos un inodo libre
