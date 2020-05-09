@@ -130,72 +130,136 @@ int main()
 	}
 	fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST ID11 openFile inexistent ", ANSI_COLOR_GREEN, "SUCCESS\n", ANSI_COLOR_RESET);
     
-	///////
+	///////ID12
 
 	char *bufferIn = "0-abcdefghijklmnñopqrstuvwxyz-1-abcdefghijklmnñopqrstuvwxyz-2-abcdefghijklmnñopqrstuvwxyz-3-abcdefghijklmnñopqrstuvwxyz-4-abcdefghijklmnñopqrstuvwxyz-5-abcdefghijklmnñopqrstuvwxyz-6-abcdefghijklmnñopqrstuvwxyz\0";
 
 	ret = writeFile(fd, bufferIn, strlen(bufferIn));
 	if (ret == -1)
 	{
-		fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST writeFile ", ANSI_COLOR_RED, "FAILED\n", ANSI_COLOR_RESET);
+		fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST ID12 writeFile ", ANSI_COLOR_RED, "FAILED\n", ANSI_COLOR_RESET);
 		return -1;
 	}
-	fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST writeFile ", ANSI_COLOR_GREEN, "SUCCESS\n", ANSI_COLOR_RESET);
-
-	///////
-
-	ret = createFile("/second.txt");
-	if (ret != 0)
+	fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST ID12 writeFile ", ANSI_COLOR_GREEN, "SUCCESS\n", ANSI_COLOR_RESET);
+    
+    ///////ID13
+    
+	ret = writeFile(-1, bufferIn, strlen(bufferIn));
+	if (ret != -1)
 	{
-		fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST createFile ", ANSI_COLOR_RED, "FAILED\n", ANSI_COLOR_RESET);
+		fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST ID13 writeFile negative fd ", ANSI_COLOR_RED, "FAILED\n", ANSI_COLOR_RESET);
 		return -1;
 	}
-	fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST createFile ", ANSI_COLOR_GREEN, "SUCCESS\n", ANSI_COLOR_RESET);
+	fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST ID13 writeFile negative fd ", ANSI_COLOR_GREEN, "SUCCESS\n", ANSI_COLOR_RESET);
+    
+    ///////ID14
+    
+	ret = writeFile(500, bufferIn, strlen(bufferIn));
+	if (ret != -1)
+	{
+		fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST ID14 writeFile fd too big ", ANSI_COLOR_RED, "FAILED\n", ANSI_COLOR_RESET);
+		return -1;
+	}
+	fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST ID14 writeFile fd too big ", ANSI_COLOR_GREEN, "SUCCESS\n", ANSI_COLOR_RESET);
+    
+    ///////ID15
 
-	///////
+	ret = writeFile(fd, bufferIn, -100);
+	if (ret != -1)
+	{
+		fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST ID15 writeFile negative number of bytes ", ANSI_COLOR_RED, "FAILED\n", ANSI_COLOR_RESET);
+		return -1;
+	}
+	fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST ID15 writeFile negative number of bytes ", ANSI_COLOR_GREEN, "SUCCESS\n", ANSI_COLOR_RESET);
 
+	///////ID16
+
+    createFile("/second.txt");
 	int fd2 = openFile("/second.txt");
-	if (fd == -1)
-	{
-		fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST openFile ", ANSI_COLOR_RED, "FAILED\n", ANSI_COLOR_RESET);
-		return -1;
-	}
-	fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST openFile ", ANSI_COLOR_GREEN, "SUCCESS\n", ANSI_COLOR_RESET);
-
-	///////
-
 	bufferIn = "222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222\0";
 
 	ret = writeFile(fd2, bufferIn, strlen(bufferIn));
-	if (ret == -1)
-	{
-		fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST writeFile ", ANSI_COLOR_RED, "FAILED\n", ANSI_COLOR_RESET);
-		return -1;
-	}
-	fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST writeFile ", ANSI_COLOR_GREEN, "SUCCESS\n", ANSI_COLOR_RESET);
-
-	///////
 
 	bufferIn = "10-abcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyz-11-abcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyz-12-abcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyz-13-abcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyz-14abcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyz-15-abcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyz-16-abcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyz-17-abcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyz-18-abcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyz-19-abcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyz-20-abcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyz-21-abcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyz-22-abcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyz-23-abcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyz-24-abcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyz-25-abcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyz-26-abcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyz-27-abcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyz-28-abcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyz-29-abcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyz-30-abcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyz-31-abcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyz-32-abcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyz-33-abcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyz-34-abcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyz-35-abcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyz-36-abcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyz-37-abcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyz-38-abcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyz-39-abcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyz-40-abcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyz-41-abcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyz-42-abcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyz-43-abcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyz-44-abcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyz-45-abcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyz-46-abcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyz-47-abcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyz-48-abcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyz-50-abcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyzabcdefghijklmnñopqrstuvwxyz\0";
 
 	ret = writeFile(fd, bufferIn, strlen(bufferIn));
 	if (ret == -1)
 	{
-		fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST writeFile ", ANSI_COLOR_RED, "FAILED\n", ANSI_COLOR_RESET);
+		fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST ID16 writeFile jump block ", ANSI_COLOR_RED, "FAILED\n", ANSI_COLOR_RESET);
 		return -1;
 	}
-	fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST writeFile ", ANSI_COLOR_GREEN, "SUCCESS\n", ANSI_COLOR_RESET);
+	fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST ID16 writeFile jump block ", ANSI_COLOR_GREEN, "SUCCESS\n", ANSI_COLOR_RESET);
 
-	///////
+    ///////ID17
+
+	ret = writeFile(fd, bufferIn, 1000000000);
+	if (ret != 0)
+	{
+		fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST ID17 writeFile too much bytes ", ANSI_COLOR_RED, "FAILED\n", ANSI_COLOR_RESET);
+		return -1;
+	}
+	fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST ID17 writeFile too much bytes ", ANSI_COLOR_GREEN, "SUCCESS\n", ANSI_COLOR_RESET);
+    
+    ///////ID18
+
+	ret = lseekFile(fd, FS_SEEK_BEGIN, 0);
+	if (ret != 0)
+	{
+		fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST ID18 lseekFile ", ANSI_COLOR_RED, "FAILED\n", ANSI_COLOR_RESET);
+		return -1;
+	}
+	fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST ID18 lseekFile ", ANSI_COLOR_GREEN, "SUCCESS\n", ANSI_COLOR_RESET);
+    
+	///////ID19
 
 	ret = readFile(fd, bufferOut, MAX_FILE_SIZE);
 	if (ret == -1)
 	{
-		fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST readFile ", ANSI_COLOR_RED, "FAILED\n", ANSI_COLOR_RESET);
+		fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST ID19 readFile ", ANSI_COLOR_RED, "FAILED\n", ANSI_COLOR_RESET);
 		return -1;
 	}
-	fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST readFile ", ANSI_COLOR_GREEN, "SUCCESS\n", ANSI_COLOR_RESET);
+	fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST ID19 readFile ", ANSI_COLOR_GREEN, "SUCCESS\n", ANSI_COLOR_RESET);
+    
+    ///////ID20
 
+	ret = readFile(-1, bufferOut, MAX_FILE_SIZE);
+	if (ret != -1)
+	{
+		fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST ID20 readFile negative fd ", ANSI_COLOR_RED, "FAILED\n", ANSI_COLOR_RESET);
+		return -1;
+	}
+	fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST ID20 readFile negative fd ", ANSI_COLOR_GREEN, "SUCCESS\n", ANSI_COLOR_RESET);
+    
+    ///////ID21
+
+	ret = readFile(500, bufferOut, MAX_FILE_SIZE);
+	if (ret != -1)
+	{
+		fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST ID21 readFile too big fd ", ANSI_COLOR_RED, "FAILED\n", ANSI_COLOR_RESET);
+		return -1;
+	}
+	fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST ID21 readFile too big fd ", ANSI_COLOR_GREEN, "SUCCESS\n", ANSI_COLOR_RESET);
+    
+    ///////ID22
+
+	ret = readFile(fd, bufferOut, -100);
+	if (ret != -1)
+	{
+		fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST ID22 readFile negative bytes ", ANSI_COLOR_RED, "FAILED\n", ANSI_COLOR_RESET);
+		return -1;
+	}
+	fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST ID22 readFile negative bytes ", ANSI_COLOR_GREEN, "SUCCESS\n", ANSI_COLOR_RESET);
+
+    ///////ID23
+
+	ret = readFile(fd, bufferOut, 1000000000);
+	if (ret != 0)
+	{
+		fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST ID23 readFile too much bytes ", ANSI_COLOR_RED, "FAILED\n", ANSI_COLOR_RESET);
+		return -1;
+	}
+	fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST ID23 readFile too much bytes ", ANSI_COLOR_GREEN, "SUCCESS\n", ANSI_COLOR_RESET);
+    
 	///////ID24
 
 	ret = closeFile(fd);
@@ -204,17 +268,8 @@ int main()
 		fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST ID24 closeFile ", ANSI_COLOR_RED, "FAILED\n", ANSI_COLOR_RESET);
 		return -1;
 	}
-	fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST ID 24 closeFile ", ANSI_COLOR_GREEN, "SUCCESS\n", ANSI_COLOR_RESET);
-
-	///////ID24
-
-	ret = closeFile(fd2);
-	if (ret != 0)
-	{
-		fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST ID24 closeFile ", ANSI_COLOR_RED, "FAILED\n", ANSI_COLOR_RESET);
-		return -1;
-	}
 	fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST ID24 closeFile ", ANSI_COLOR_GREEN, "SUCCESS\n", ANSI_COLOR_RESET);
+	ret = closeFile(fd2);
     
     ///////ID25
 
@@ -377,6 +432,28 @@ int main()
 		return -1;
 	}
 	fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST ID39 openFile after open link ", ANSI_COLOR_GREEN, "SUCCESS\n", ANSI_COLOR_RESET);
+    
+    ///////ID40
+
+	ret = readFile(fd, bufferOut, MAX_FILE_SIZE);
+	if (ret == -1)
+	{
+		fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST ID40 readFile link ", ANSI_COLOR_RED, "FAILED\n", ANSI_COLOR_RESET);
+		return -1;
+	}
+	fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST ID40 readFile link ", ANSI_COLOR_GREEN, "SUCCESS\n", ANSI_COLOR_RESET);
+    
+    ///////ID41
+
+	bufferIn = "0-abcdefghijklmnñopqrstuvwxyz-1-abcdefghijklmnñopqrstuvwxyz-2-abcdefghijklmnñopqrstuvwxyz-3-abcdefghijklmnñopqrstuvwxyz-4-abcdefghijklmnñopqrstuvwxyz-5-abcdefghijklmnñopqrstuvwxyz-6-abcdefghijklmnñopqrstuvwxyz\0";
+
+	ret = writeFile(fd, bufferIn, strlen(bufferIn));
+	if (ret == -1)
+	{
+		fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST ID41 writeFile link ", ANSI_COLOR_RED, "FAILED\n", ANSI_COLOR_RESET);
+		return -1;
+	}
+	fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST ID41 writeFile link ", ANSI_COLOR_GREEN, "SUCCESS\n", ANSI_COLOR_RESET);
     
     ///////ID42
     

@@ -494,8 +494,7 @@ int writeFile(int fileDescriptor, void *buffer, int numBytes)
 
         //comprobamos que no se pase y le quede por escribir
         if(Inodos[fileDescriptor].posPuntero + numBytes > MAX_FILE_SIZE){
-            numBytes = MAX_FILE_SIZE - Inodos[fileDescriptor].posPuntero;
-            if(numBytes <= 0) return 0;
+            return 0;
         }
 
         //Si el puntero no está en el borde de un bloque hay que leer un poco antes de empezar a leer bloques enteros
