@@ -328,6 +328,36 @@ int main()
 	fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST ID34 closeFileIntegrity after openFile ", ANSI_COLOR_GREEN, "SUCCESS\n", ANSI_COLOR_RESET);
     closeFile(fd);
     
+    ///////ID35
+
+    ret = createLn("/test.txt", "/enlace");
+	if (ret != 0)
+	{
+		fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST ID35 createLn ", ANSI_COLOR_RED, "FAILED\n", ANSI_COLOR_RESET);
+		return -1;
+	}
+	fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST ID35 createLn ", ANSI_COLOR_GREEN, "SUCCESS\n", ANSI_COLOR_RESET);
+    
+    ///////ID36
+
+    ret = createLn("/dso.txt", "/enlace");
+	if (ret == 0)
+	{
+		fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST ID36 createLn inexistent file ", ANSI_COLOR_RED, "FAILED\n", ANSI_COLOR_RESET);
+		return -1;
+	}
+	fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST ID36 createLn inexistent file ", ANSI_COLOR_GREEN, "SUCCESS\n", ANSI_COLOR_RESET);
+    
+    ///////ID37
+
+    ret = createLn("/enlace", "/enlace2");
+	if (ret == 0)
+	{
+		fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST ID37 createLn to link ", ANSI_COLOR_RED, "FAILED\n", ANSI_COLOR_RESET);
+		return -1;
+	}
+	fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST ID37 createLn to link ", ANSI_COLOR_GREEN, "SUCCESS\n", ANSI_COLOR_RESET);
+    
 	///////ID4
 
 	ret = unmountFS();
