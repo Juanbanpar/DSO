@@ -29,6 +29,7 @@ INodoX Inodos[MAX_FILES];
 int mkFS(long deviceSize)
 {
 
+    //Comprobamos si se ha creado un FS del tamaño correcto
 	if(deviceSize < 471040 || deviceSize > 614400){
 		return -1;
 	}
@@ -56,6 +57,7 @@ int mkFS(long deviceSize)
         bitmap_setbit(SB1.mapaBloques, 1, 1);
     }
     
+    //Desmotamos el FS
     if (unmountFS() == -1){
         //printf("Error unmountFS\n");
         return -1;
@@ -76,6 +78,7 @@ int mountFS(void)
         return -1;
     }
 
+    //Leemos los superbloques desde el disco
     if (bread(DEVICE_IMAGE, 0, ((char *)&(SB1))) == -1 || bread(DEVICE_IMAGE, 1, ((char *)&(SB2))) == -1){
         //printf("Error bread\n");
         return -1;
@@ -97,6 +100,7 @@ int unmountFS(void)
         return -1;
     }
 
+    //Comprobamos que todos los ficheros estén cerrados, de lo contrario no se puede desmontar el FS
     for (int i = 0; i < MAX_FILES; i++) {
         if (Inodos[i].estado == 1) {
             //printf("Error unmountFS: file %d is still open", i);
@@ -104,6 +108,7 @@ int unmountFS(void)
         }
     }
     
+    //Escribimos a disco los superbloques
     if (bwrite(DEVICE_IMAGE, 0, ((char *)&(SB1))) == -1 || bwrite(DEVICE_IMAGE, 1, ((char *)&(SB2))) == -1){
         //printf("Error bwrite\n");
         return -1;
@@ -125,6 +130,7 @@ int createFile(char *fileName)
         return -2;
     }
 
+    //Se comprueva la longitud del nombre y se obtiene su descriptor de fichero
     if(strlen(fileName)>MAX_NAME_LENGHT) return -2;
     if(namei(fileName)!=-1){
         //printf("File already exists\n");
@@ -288,8 +294,10 @@ int closeFile(int fileDescriptor)
         return -1;
     }
 
+    //Comprobamos que el FD introducido está dentro de ragno
     if(fileDescriptor < 0 || fileDescriptor > MAX_FILES || Inodos[fileDescriptor].estado==0) return -1;
     
+    //Si el fichero fue abierto con integridad no se puede cerrar sin ella
     if (Inodos[fileDescriptor].integridad == 1) {
         //printf("NF11: You can't close a file opened using openFileIntegrity using closeFile");
         return -1;
@@ -642,12 +650,15 @@ int checkFile (char * fileName)
         return -2;
     }
 
+    //Para hacer un checkFile el fichero debe estar abierto
     if(Inodos[inodo].estado!=1){
         return -2;
     }
+    //Guardamos la posición del puntero para recuperarla después
     int pos = Inodos[inodo].posPuntero;
     Inodos[inodo].posPuntero=0;
     
+    //Debemos leer todo el fichero para calcular el CRC
     if(inodo < MAX_FILES/2) {
         unsigned char buffer[SB1.inodos[inodo].size];
         readFile(inodo, buffer, SB1.inodos[inodo].size);
@@ -699,12 +710,14 @@ int includeIntegrity (char * fileName)
         return -1;
     }
     
+    //El fichero debe estar abierto
     if(Inodos[inodo].estado!=1){
         return -2;
     }
     int pos = Inodos[inodo].posPuntero;
     Inodos[inodo].posPuntero=0;
     
+    //Leemos todo el fichero para calcular el CRC
     if(inodo < MAX_FILES/2) {
         unsigned char buffer[SB1.inodos[inodo].size];
         readFile(inodo, buffer, SB1.inodos[inodo].size);
@@ -739,11 +752,13 @@ int openFileIntegrity(char *fileName)
         return -3;
     }
 
+    //Abrimos primero como un fichero normal
     int open = openFile(fileName);
 
     if (open == -1) return -1;
     else if (open == -2) return -3;
 
+    //Y realizamos las comprobaciones sobre su integridad
     if (open < MAX_FILES/2) {
         if (SB1.inodos[open].crc == 0) {
             //printf("NF10: This file doesn't have a CRC");
@@ -794,6 +809,7 @@ int closeFileIntegrity(int fileDescriptor)
 
     if(fileDescriptor < 0 || fileDescriptor > MAX_FILES) return -1;
     
+    //Si el fichero fue abierto sin integridad no puede cerrarse con ella
     if (Inodos[fileDescriptor].integridad == 0) {
         //printf("NF12: You can't close a file opened using openFile using closeFileIntegrity");
         return -1;
